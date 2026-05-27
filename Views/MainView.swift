@@ -46,32 +46,6 @@ struct MainView: View {
     }
 }
 
-// MARK: - Placeholders untuk Layar yang Belum Kita Bangun Penuh
-
-/// Placeholder untuk Tab 1 (Home)
-struct HomeView: View {
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.bgCream.ignoresSafeArea()
-                VStack(spacing: 16) {
-                    Image(systemName: "chart.bar.doc.horizontal")
-                        .font(.system(size: 50))
-                        .foregroundStyle(Color.accentWalnut)
-                    Text("Dashboard Summary")
-                        .font(.headline)
-                    Text("Nantinya berisi statistik sparring, win rate, atau mosi terbaru.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-            }
-            .navigationTitle("Home")
-        }
-    }
-}
-
 /// Placeholder untuk Tab 5 (Profile)
 struct ProfileView: View {
     var body: some View {

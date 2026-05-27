@@ -9,14 +9,14 @@ import SwiftUI
 
 struct MotionArchiveView: View {
     @ObservedObject var viewModel: MotionArchiveViewModel
-    @State private var selectedTab = 0 // 0: Explore, 1: My Notes
+    @State private var selectedTab = 0  // 0: Explore, 1: My Notes
     @State private var showingNewNoteSheet = false
-    
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
                 Color.bgCream.ignoresSafeArea()
-                
+
                 VStack(spacing: 0) {
                     Picker("Menu Navigasi", selection: $selectedTab) {
                         Text("Explore Motions").tag(0)
@@ -24,14 +24,14 @@ struct MotionArchiveView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding()
-                    
+
                     if selectedTab == 0 {
                         ExploreMotionListView(viewModel: viewModel)
                     } else {
                         MyNotesListView(viewModel: viewModel)
                     }
                 }
-                
+
                 // Floating Action Button khusus untuk menulis Note manual bebas (UC01)
                 if selectedTab == 1 {
                     Button(action: { showingNewNoteSheet = true }) {
@@ -41,13 +41,21 @@ struct MotionArchiveView: View {
                             .frame(width: 60, height: 60)
                             .background(Color.btnPositive)
                             .clipShape(Circle())
-                            .shadow(color: Color.btnPositive.opacity(0.3), radius: 6, x: 0, y: 3)
+                            .shadow(
+                                color: Color.btnPositive.opacity(0.3),
+                                radius: 6,
+                                x: 0,
+                                y: 3
+                            )
                     }
                     .padding(24)
                 }
             }
             .navigationTitle("Motion Archive")
-            .searchable(text: $viewModel.searchText, prompt: "Cari mosi atau catatan...")
+            .searchable(
+                text: $viewModel.searchText,
+                prompt: "Cari mosi atau catatan..."
+            )
             .sheet(isPresented: $showingNewNoteSheet) {
                 NavigationStack {
                     // Perbaikan: Menyertakan ownerId agar sinkron dengan model
@@ -61,7 +69,8 @@ struct MotionArchiveView: View {
                             visibility: .privateAccess,
                             isFeedbackRequested: false,
                             updatedAt: Date()
-                        )
+                        ),
+                        isNewNote: true  // <-- TAMBAHKAN INI
                     )
                 }
             }
@@ -76,7 +85,7 @@ struct MotionArchiveTabView: View {
         // PERBAIKAN: Gunakan LocalCoreDataStorage sesuai dengan nama class di repo kamu
         localCache: LocalCoreDataStorage()
     )
-    
+
     var body: some View {
         MotionArchiveView(viewModel: viewModel)
     }

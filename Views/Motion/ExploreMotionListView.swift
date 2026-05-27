@@ -90,37 +90,3 @@ struct ExploreMotionListView: View {
         }
     }
 }
-
-struct MyNotesListView: View {
-    @ObservedObject var viewModel: MotionArchiveViewModel
-    
-    var body: some View {
-        List {
-            ForEach(viewModel.filteredNotes) { note in
-                // MENGGUNAKAN NAVIGATION LINK: Langsung masuk ke NoteDetailView
-                NavigationLink(destination: NoteDetailView(viewModel: viewModel, noteId: note.id)) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(note.motionTitle)
-                            .font(.system(.headline, design: .serif, weight: .bold))
-                            .foregroundStyle(Color.textCharcoal)
-                            .lineLimit(2)
-                        
-                        HStack(spacing: 4) {
-                            Image(systemName: note.visibility == .privateAccess ? "lock.fill" : "globe")
-                            Text(note.visibility == .privateAccess ? "PRIVAT" : "PUBLIK")
-                        }
-                        .font(.system(size: 9, weight: .black))
-                        .foregroundStyle(note.visibility == .privateAccess ? Color.btnNegative : Color.btnPositive)
-                        .padding(.horizontal, 6).padding(.vertical, 3)
-                        .background(note.visibility == .privateAccess ? Color.btnNegative.opacity(0.08) : Color.btnPositive.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                    }
-                    .padding(.vertical, 4)
-                }
-                .listRowBackground(Color.white)
-            }
-            .onDelete(perform: viewModel.deleteNote)
-        }
-        .listStyle(.plain)
-    }
-}
