@@ -1,3 +1,10 @@
+//
+//  NoteEditorView.swift
+//  YukDebatCuyy
+//
+//  Created by Bryan Carlie Lukito Setiawan on 27/05/26.
+//
+
 import SwiftUI
 
 struct NoteEditorView: View {
@@ -7,55 +14,65 @@ struct NoteEditorView: View {
     
     var body: some View {
         Form {
-            Section(header: Text("Detail Mosi")) {
-                TextField("Judul Mosi", text: $draftNote.motionTitle)
+            Section(header: Text("Detail Mosi Lomba")) {
+                TextField("Judul Mosi", text: $draftNote.motionTitle, axis: .vertical)
+                    .font(.system(.body, design: .serif, weight: .medium))
                 
-                // Toggle Public/Private (FR-1.2)
-                Picker("Visibilitas", selection: $draftNote.visibility) {
+                Picker("Visibilitas Catatan", selection: $draftNote.visibility) {
                     Text("Privat (Hanya Saya)").tag(VisibilityType.privateAccess)
-                    Text("Publik (Bisa Dilihat Juri)").tag(VisibilityType.publicAccess)
+                    Text("Publik (Bisa Dinilai Juri)").tag(VisibilityType.publicAccess)
                 }
+                .tint(Color.accentWalnut)
             }
+            .listRowBackground(Color.white)
             
-            Section(header: Text("Catatan Argumen (Case Building)")) {
+            Section(header: Text("Struktur Konstruksi Kasus (Case Building)")) {
                 TextEditor(text: $draftNote.argumentsRichText)
-                    .frame(minHeight: 250)
+                    .frame(minHeight: 280)
+                    .font(.system(.body, design: .default))
             }
+            .listRowBackground(Color.white)
             
-            // LOGIKA KONDISIONAL END-TO-END (UC04)
-            // Jika Privat, form ini tidak muncul sama sekali.
-            // Jika Publik, user diizinkan meminta feedback.
+            // LOGIKA KONDISIONAL END-TO-END (UC04 INTEGRATION)
             if draftNote.visibility == .publicAccess {
-                Section(header: Text("Evaluasi & Feedback"), footer: Text("Meminta feedback akan mengirimkan argumen ini ke antrean para Adjudicator.")) {
+                Section(
+                    header: Text("Evaluasi & Penilaian Juri"),
+                    footer: Text("Dengan menekan tombol ini, tulisan argumenmu akan langsung masuk ke antrean penilaian Adjudicator aplikasi YukDebat.")
+                ) {
                     Button(action: {
                         draftNote.isFeedbackRequested = true
                         viewModel.requestFeedback(for: draftNote.id)
                     }) {
                         HStack {
-                            Text(draftNote.isFeedbackRequested ? "Feedback Sedang Diproses..." : "Minta Feedback Juri")
+                            Image(systemName: draftNote.isFeedbackRequested ? "checkmark.circle.fill" : "paperplane.fill")
+                            Text(draftNote.isFeedbackRequested ? "Feedback Berhasil Diminta" : "Minta Feedback Adjudicator")
                             Spacer()
-                            if draftNote.isFeedbackRequested { Image(systemName: "checkmark.circle.fill") }
                         }
+                        .font(.subheadline.bold())
                     }
                     .foregroundStyle(draftNote.isFeedbackRequested ? Color.gray : Color.btnPositive)
                     .disabled(draftNote.isFeedbackRequested)
                 }
+                .listRowBackground(Color.white)
             }
         }
-        .navigationTitle("Catatan Debat")
+        .scrollContentBackground(.hidden)
+        .background(Color.bgCream)
+        .navigationTitle("Catatan Strategi")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Batal") { dismiss() }.foregroundStyle(Color.btnNegative)
+                Button("Batal") { dismiss() }
+                    .foregroundStyle(Color.btnNegative)
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Simpan") {
-                    // Update timestamp & save (Update/Create logic)
                     draftNote.updatedAt = Date()
                     viewModel.saveNote(draftNote)
                     dismiss()
                 }
                 .fontWeight(.bold)
+                .foregroundStyle(draftNote.motionTitle.isEmpty ? Color.gray : Color.btnPositive)
                 .disabled(draftNote.motionTitle.isEmpty)
             }
         }

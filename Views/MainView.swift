@@ -72,31 +72,6 @@ struct HomeView: View {
     }
 }
 
-
-/// Placeholder untuk Tab 4 (Motion Archive - Master Flow)
-struct MotionArchiveTabView: View {
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.bgCream.ignoresSafeArea()
-                VStack(spacing: 16) {
-                    Image(systemName: "text.book.closed.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(Color.accentWalnut)
-                    Text("Pangkalan Mosi & Catatan")
-                        .font(.headline)
-                    Text("Tempat mencari mosi, nulis argumen (Case Building), set Public/Private, dan baca argumen orang lain.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-            }
-            .navigationTitle("Motion Archive")
-        }
-    }
-}
-
 /// Placeholder untuk Tab 5 (Profile)
 struct ProfileView: View {
     var body: some View {
