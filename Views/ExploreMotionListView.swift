@@ -9,86 +9,101 @@ import SwiftUI
 
 struct ExploreMotionListView: View {
     @ObservedObject var viewModel: MotionArchiveViewModel
-    @State private var selectedMotionForNote: MotionModel?
     
     var body: some View {
         ScrollView(showsIndicators: false) {
+            
+            // TOMBOL GENERATE (Anti-Spam & Interaktif)
             Button(action: { viewModel.triggerFetchMotion() }) {
-                Label("Generate Random Motion", systemImage: "sparkles")
-                    .font(.subheadline.bold())
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.btnPositive)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                HStack(spacing: 8) {
+                    if viewModel.isGenerating {
+                        ProgressView().tint(.white)
+                        Text("Mencari Mosi...").font(.subheadline.bold())
+                    } else {
+                        Image(systemName: "sparkles")
+                        Text("Generate Random Motion").font(.subheadline.bold())
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(viewModel.isGenerating ? Color.btnPositive.opacity(0.6) : Color.btnPositive)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .scaleEffect(viewModel.isGenerating ? 0.97 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: viewModel.isGenerating)
             }
             .padding([.horizontal, .top])
+            .disabled(viewModel.isGenerating) // Tombol mati saat loading
             
+            // LIST MOSI (Anti-Glitch)
             LazyVStack(spacing: 12) {
                 ForEach(viewModel.filteredMotions) { motion in
-                    Button(action: { selectedMotionForNote = motion }) {
-                        VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
                             HStack {
-                                Image(systemName: "tag.fill")
-                                    .font(.caption)
-                                Text(motion.category.uppercased())
-                                    .font(.system(size: 10, weight: .black))
+                                Image(systemName: "tag.fill").font(.caption)
+                                Text(motion.category.uppercased()).font(.system(size: 10, weight: .black))
                             }
                             .foregroundStyle(Color.accentWalnut)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.accentWalnut.opacity(0.08))
-                            .clipShape(Capsule())
+                            .padding(.horizontal, 8).padding(.vertical, 4)
+                            .background(Color.accentWalnut.opacity(0.08)).clipShape(Capsule())
                             
-                            Text(motion.title)
-                                .font(.system(.body, design: .serif, weight: .bold))
-                                .foregroundStyle(Color.textCharcoal)
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer()
                         }
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black.opacity(0.04), lineWidth: 1))
+                        
+                        Text(motion.title)
+                            .font(.system(.body, design: .serif, weight: .bold))
+                            .foregroundStyle(Color.textCharcoal)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        // TOMBOL SIMPAN (Reaktif: Berubah seketika saat di-klik)
+                        Button(action: {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                viewModel.createNoteFromMotion(motion)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: motion.isWishlisted ? "checkmark.circle.fill" : "plus.circle.fill")
+                                Text(motion.isWishlisted ? "Tersimpan di Catatan" : "Simpan ke Catatan")
+                            }
+                            .font(.subheadline.bold())
+                            .foregroundStyle(motion.isWishlisted ? Color.btnPositive : .white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(motion.isWishlisted ? Color.btnPositive.opacity(0.15) : Color.btnNeutral)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        .disabled(motion.isWishlisted) // Matikan tombol jika sudah disimpan
                     }
+                    .padding(16)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black.opacity(0.04), lineWidth: 1))
                     .padding(.horizontal)
                 }
             }
             .padding(.top, 8)
-        }
-        .sheet(item: $selectedMotionForNote) { motion in
-            NavigationStack {
-                // Perbaikan: Menyertakan ownerId agar sesuai dengan struktur model
-                NoteEditorView(
-                    viewModel: viewModel,
-                    draftNote: CaseBuildingNoteModel(
-                        id: UUID().uuidString,
-                        ownerId: "user_me",
-                        motionTitle: motion.title,
-                        argumentsRichText: "",
-                        visibility: .privateAccess,
-                        isFeedbackRequested: false,
-                        updatedAt: Date()
-                    )
-                )
-            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.filteredMotions) // Animasi list aman
         }
     }
 }
 
 struct MyNotesListView: View {
     @ObservedObject var viewModel: MotionArchiveViewModel
-    @State private var noteToEdit: CaseBuildingNoteModel?
     
     var body: some View {
         List {
             ForEach(viewModel.filteredNotes) { note in
-                Button(action: { noteToEdit = note }) {
+                // MENGGUNAKAN NAVIGATION LINK: Langsung masuk ke NoteDetailView
+                NavigationLink(destination: NoteDetailView(viewModel: viewModel, noteId: note.id)) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(note.motionTitle)
                             .font(.system(.headline, design: .serif, weight: .bold))
                             .foregroundStyle(Color.textCharcoal)
+                            .lineLimit(2)
                         
                         HStack(spacing: 4) {
                             Image(systemName: note.visibility == .privateAccess ? "lock.fill" : "globe")
@@ -96,8 +111,7 @@ struct MyNotesListView: View {
                         }
                         .font(.system(size: 9, weight: .black))
                         .foregroundStyle(note.visibility == .privateAccess ? Color.btnNegative : Color.btnPositive)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 6).padding(.vertical, 3)
                         .background(note.visibility == .privateAccess ? Color.btnNegative.opacity(0.08) : Color.btnPositive.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
@@ -108,10 +122,5 @@ struct MyNotesListView: View {
             .onDelete(perform: viewModel.deleteNote)
         }
         .listStyle(.plain)
-        .sheet(item: $noteToEdit) { note in
-            NavigationStack {
-                NoteEditorView(viewModel: viewModel, draftNote: note)
-            }
-        }
     }
 }

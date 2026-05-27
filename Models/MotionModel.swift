@@ -9,7 +9,7 @@ import Foundation
 
 /// Holds the data for a debate motion fetched from the external API or local fallback.
 /// Separated to manage wishlist state efficiently without cluttering user profiles.
-struct MotionModel: Codable, Identifiable {
+struct MotionModel: Codable, Identifiable, Equatable{
     let id: String
     let title: String
     let category: String

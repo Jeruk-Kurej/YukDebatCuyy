@@ -33,32 +33,11 @@ struct NoteEditorView: View {
             }
             .listRowBackground(Color.white)
             
-            // LOGIKA KONDISIONAL END-TO-END (UC04 INTEGRATION)
-            if draftNote.visibility == .publicAccess {
-                Section(
-                    header: Text("Evaluasi & Penilaian Juri"),
-                    footer: Text("Dengan menekan tombol ini, tulisan argumenmu akan langsung masuk ke antrean penilaian Adjudicator aplikasi YukDebat.")
-                ) {
-                    Button(action: {
-                        draftNote.isFeedbackRequested = true
-                        viewModel.requestFeedback(for: draftNote.id)
-                    }) {
-                        HStack {
-                            Image(systemName: draftNote.isFeedbackRequested ? "checkmark.circle.fill" : "paperplane.fill")
-                            Text(draftNote.isFeedbackRequested ? "Feedback Berhasil Diminta" : "Minta Feedback Adjudicator")
-                            Spacer()
-                        }
-                        .font(.subheadline.bold())
-                    }
-                    .foregroundStyle(draftNote.isFeedbackRequested ? Color.gray : Color.btnPositive)
-                    .disabled(draftNote.isFeedbackRequested)
-                }
-                .listRowBackground(Color.white)
-            }
+            // TOMBOL FEEDBACK DIHAPUS DARI SINI (Pindah ke Detail View)
         }
         .scrollContentBackground(.hidden)
         .background(Color.bgCream)
-        .navigationTitle("Catatan Strategi")
+        .navigationTitle("Edit Catatan")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {

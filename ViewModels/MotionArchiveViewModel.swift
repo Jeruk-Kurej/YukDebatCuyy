@@ -10,14 +10,13 @@ import Combine
 import SwiftUI
 
 class MotionArchiveViewModel: ObservableObject {
-    // State Utama
     @Published var motionsList: [MotionModel] = []
     @Published var savedNotes: [CaseBuildingNoteModel] = []
-    
-    // State Pencarian (Search)
     @Published var searchText: String = ""
     
-    // Services
+    // State untuk interaktivitas tombol & Mencegah Spam
+    @Published var isGenerating: Bool = false
+    
     private let apiProxy: CloudFunctionsProtocol
     private let localCache: CoreDataStorageProtocol
     
@@ -27,7 +26,6 @@ class MotionArchiveViewModel: ObservableObject {
         loadDummyData()
     }
     
-    // Computed Property untuk Fitur Search Real-time (FR-3.2)
     var filteredMotions: [MotionModel] {
         if searchText.isEmpty { return motionsList }
         return motionsList.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
@@ -38,13 +36,14 @@ class MotionArchiveViewModel: ObservableObject {
         return savedNotes.filter { $0.motionTitle.localizedCaseInsensitiveContains(searchText) }
     }
     
-    // MARK: - Motion Logic (Generate UC03)
+    // MARK: - Motion Logic (Generate dengan Anti-Spam Cooldown)
     func triggerFetchMotion() {
+        guard !isGenerating else { return } // Mencegah klik bertubi-tubi
+        isGenerating = true
+        
         Task {
             do {
                 let response = try await apiProxy.callExternalAPI(endpoint: "get-random-motion", parameters: [:])
-                
-                // Perbaikan: Menyertakan isWishlisted agar sesuai dengan MotionModel.swift
                 let newMotion = MotionModel(
                     id: response["id"] as? String ?? UUID().uuidString,
                     title: response["title"] as? String ?? "Mosi Baru",
@@ -55,13 +54,43 @@ class MotionArchiveViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     self.motionsList.insert(newMotion, at: 0)
                 }
+                
+                // Mencegah Glitch UI: Paksa cooldown 0.6 detik sebelum bisa diklik lagi
+                try await Task.sleep(nanoseconds: 600_000_000)
+                
+                DispatchQueue.main.async { self.isGenerating = false }
+                
             } catch {
-                print("Error fetching motion from Proxy Cloud: \(error)")
+                DispatchQueue.main.async { self.isGenerating = false }
+                print("Error fetching motion: \(error)")
             }
         }
     }
     
-    // MARK: - CRUD Case Building Notes (UC01)
+    // MARK: - Pindah Mosi ke My Notes (Perbaikan Interaktif)
+    func createNoteFromMotion(_ motion: MotionModel) {
+        // Cegah duplikasi jika sudah pernah di-save
+        guard !savedNotes.contains(where: { $0.motionTitle == motion.title }) else { return }
+        
+        let newNote = CaseBuildingNoteModel(
+            id: UUID().uuidString,
+            ownerId: "user_me",
+            motionTitle: motion.title,
+            argumentsRichText: "",
+            visibility: .privateAccess,
+            isFeedbackRequested: false,
+            updatedAt: Date()
+        )
+        
+        // Ubah status tombol di List
+        if let idx = motionsList.firstIndex(where: { $0.id == motion.id }) {
+            motionsList[idx].isWishlisted = true
+        }
+        
+        savedNotes.insert(newNote, at: 0)
+    }
+    
+    // MARK: - CRUD Normal
     func saveNote(_ note: CaseBuildingNoteModel) {
         if let index = savedNotes.firstIndex(where: { $0.id == note.id }) {
             savedNotes[index] = note
@@ -74,20 +103,18 @@ class MotionArchiveViewModel: ObservableObject {
         savedNotes.remove(atOffsets: offsets)
     }
     
-    // MARK: - Evaluation Feedback Link (UC04 Integration)
     func requestFeedback(for noteId: String) {
         if let index = savedNotes.firstIndex(where: { $0.id == noteId }) {
             savedNotes[index].isFeedbackRequested = true
-            print("Sukses menautkan note \(noteId) ke antrean Adjudicator.")
         }
     }
     
     private func loadDummyData() {
         motionsList = [
-            MotionModel(id: "m1", title: "Dewan ini akan melarang penggunaan AI sebagai instrumen kelulusan di Universitas Ciputra", category: "Pendidikan & Teknologi", isWishlisted: false)
+            MotionModel(id: "m1", title: "Dewan ini akan melarang penggunaan AI sebagai instrumen kelulusan", category: "Pendidikan & Teknologi", isWishlisted: false)
         ]
         savedNotes = [
-            CaseBuildingNoteModel(id: "n1", ownerId: "user_me", motionTitle: "THW ban AI in Universities", argumentsRichText: "Argumen dasar: Penggunaan kecerdasan buatan yang tidak terukur dapat mengikis fondasi pemikiran kritis mahasiswa Informatika.", visibility: .privateAccess, isFeedbackRequested: false, updatedAt: Date())
+            CaseBuildingNoteModel(id: "n1", ownerId: "user_me", motionTitle: "THW ban AI in Universities", argumentsRichText: "Argumen 1: ...", visibility: .privateAccess, isFeedbackRequested: false, updatedAt: Date())
         ]
     }
 }
