@@ -8,17 +8,14 @@
 import SwiftUI
 
 struct CompetitionView: View {
-    @StateObject private var viewModel = CompetitionViewModel(
-        dbService: MockFirestoreService(),
-        storageService: MockCloudStorage()
-    )
+    @StateObject private var viewModel = CompetitionViewModel()
     @State private var isShowingUploadForm = false
-    
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
                 Color.bgCream.ignoresSafeArea()
-                
+
                 ScrollView {
                     LazyVStack(spacing: 20) {
                         ForEach(viewModel.competitions) { comp in
@@ -27,7 +24,7 @@ struct CompetitionView: View {
                     }
                     .padding(24)
                 }
-                
+
                 // FAB untuk akses Upload bagi Promotor
                 Button(action: { isShowingUploadForm = true }) {
                     Image(systemName: "plus")

@@ -1,75 +1,64 @@
-//
-//  MainView.swift
-//  YukDebatCuyy
-//
-//  Created by Bryan Carlie Lukito Setiawan on 26/05/26.
-//
-
 import SwiftUI
 
-// MARK: - Main Navigation (Router)
 struct MainView: View {
+    @EnvironmentObject var authVM: AuthViewModel
+
+    // Inisialisasi semua ViewModel yang dibutuhkan oleh tiap tab
+    @StateObject private var motionViewModel = MotionArchiveViewModel(
+        apiProxy: MockCloudFunctions(),
+        localCache: LocalCoreDataStorage()
+    )
+
+    @StateObject private var compViewModel = CompetitionViewModel()
+
+    // PERBAIKAN: Menambahkan inisialisasi ModerationDashboardViewModel
+    @StateObject private var modViewModel = ModerationDashboardViewModel(
+        dbService: MockFirestoreService(),
+        storageService: MockCloudStorage()
+    )
+
     var body: some View {
         TabView {
-            // TAB 1: HOME
-            HomeView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
             
-            // TAB 2: COMPETITION (UC05)
+            // 1. COMPETITION
             CompetitionView()
-                .tabItem {
-                    Label("Competition", systemImage: "trophy.fill")
-                }
+                .tabItem { Label("Competition", systemImage: "trophy.fill") }
             
-            // TAB 3: SPARRING (UC02)
-            SparringView(viewModel: SparringViewModel(dbService: MockFirestoreService()))
-                .tabItem {
-                    Label("Sparring", systemImage: "person.2.fill")
-                }
-            
-            // TAB 4: MOTION ARCHIVE (Gabungan UC01, UC03, UC04)
-            // Di sinilah nanti user mencari mosi, generate, dan menulis argumen (Case Building)
-            MotionArchiveTabView()
+            // 2. SPARRING
+            SparringView(
+                viewModel: SparringViewModel(dbService: MockFirestoreService())
+            )
+            .tabItem { Label("Sparring", systemImage: "figure.boxing") }
+
+            // 3. MOTIONS
+            MotionArchiveView(viewModel: motionViewModel)
                 .tabItem {
                     Label("Motions", systemImage: "books.vertical.fill")
                 }
-            
-            // TAB 5: PROFILE / SETTINGS
-            ProfileView()
-                .tabItem {
-                    Label("Profile", systemImage: "person.crop.circle.fill")
-                }
-        }
-        .tint(Color.btnPositive) // Menggunakan warna hijau YukDebat
-    }
-}
 
-/// Placeholder untuk Tab 5 (Profile)
-struct ProfileView: View {
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.bgCream.ignoresSafeArea()
-                VStack(spacing: 16) {
-                    Image(systemName: "gearshape.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(Color.accentWalnut)
-                    Text("Settings & Profile")
-                        .font(.headline)
-                    Text("Manajemen akun, ganti role sementara, dan tombol Log Out.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
+            // AKSES KHUSUS ADMIN (UC06 - Manage System Content & Users)
+            if authVM.currentUser?.role == .admin {
+                ModerationDashboardView(viewModel: modViewModel)
+                    .tabItem {
+                        Label("Admin", systemImage: "shield.checkerboard")
+                    }
             }
-            .navigationTitle("Profile")
+
+            // AKSES KHUSUS JURI (UC04 - Manage Evaluation)
+            if authVM.currentUser?.role == .adjudicator {
+                AdjudicatorDashboardView(motionViewModel: motionViewModel)
+                    .tabItem { Label("Juri", systemImage: "briefcase.fill") }
+            }
+
+            // 4. PROFILE
+            ProfileView()
+                .tabItem { Label("Profile", systemImage: "person.fill") }
         }
+        .tint(Color.btnPositive)
     }
 }
 
 #Preview {
     MainView()
+        .environmentObject(AuthViewModel())
 }

@@ -1,39 +1,24 @@
-//
-//  UploadFormCompetition.swift
-//  YukDebatCuyy
-//
-//  Created by Bryan Carlie Lukito Setiawan on 27/05/26.
-//
-
 import SwiftUI
 
-// MARK: - Form Upload
 struct UploadCompetitionForm: View {
     @ObservedObject var viewModel: CompetitionViewModel
     @Environment(\.dismiss) var dismiss
-    @State private var selectedImageData: Data? = nil  // Anggap ini sudah terisi dari ImagePicker
-
+    
     var body: some View {
         NavigationStack {
             Form {
                 Section("Informasi Lomba") {
                     TextField("Nama Kompetisi", text: $viewModel.name)
-                    TextField(
-                        "Deskripsi",
-                        text: $viewModel.desc,
-                        axis: .vertical
-                    )
-                    .frame(minHeight: 100)
+                    TextField("Deskripsi Lomba", text: $viewModel.desc, axis: .vertical)
+                        .frame(minHeight: 100)
                 }
 
-                Section("Poster") {
-                    Button(action: { /* Logika ImagePicker nanti di sini */  })
-                    {
-                        Label(
-                            selectedImageData == nil
-                                ? "Pilih Poster (Max 2MB)" : "Poster Terpilih",
-                            systemImage: "photo.badge.plus"
-                        )
+                // Notifikasi Status
+                if let msg = viewModel.statusMsg {
+                    Section {
+                        Text(msg)
+                            .font(.subheadline.bold())
+                            .foregroundStyle(viewModel.isUploadSuccess ? Color.green : Color.red)
                     }
                 }
             }
@@ -42,29 +27,29 @@ struct UploadCompetitionForm: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Batal") { dismiss() }
-                        .foregroundStyle(Color.btnNegative)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Simpan") {
-                        // LOGIKA END-TO-END: Menggunakan data dari ViewModel
-                        // Jika tidak ada gambar, pakai data dummy untuk tes
-                        let finalData = selectedImageData ?? Data()
-                        viewModel.submitCompetitionData(imageData: finalData)
+                    Button(action: {
+                        viewModel.submitCompetitionData()
+                    }) {
+                        if viewModel.isLoading {
+                            ProgressView()
+                        } else {
+                            Text("Kirim Lomba").fontWeight(.bold)
+                        }
+                    }
+                    .disabled(viewModel.name.isEmpty || viewModel.isLoading)
+                }
+            }
+            // Auto-dismiss jika upload sukses
+            .onChange(of: viewModel.isUploadSuccess) { success in
+                if success {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        viewModel.statusMsg = nil // Reset pesan
                         dismiss()
                     }
-                    .fontWeight(.bold)
-                    .disabled(viewModel.name.isEmpty)
                 }
             }
         }
     }
-}
-
-#Preview {
-    UploadCompetitionForm(
-        viewModel: CompetitionViewModel(
-            dbService: MockFirestoreService(),
-            storageService: MockCloudStorage()
-        )
-    )
 }

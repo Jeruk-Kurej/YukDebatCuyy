@@ -1,75 +1,78 @@
-import Combine
 import Foundation
+import Combine
+import FirebaseFirestore
+import FirebaseAuth
 
 class CompetitionViewModel: ObservableObject {
     @Published var competitions: [CompetitionModel] = []
-    @Published var statusMsg: String = ""
+    
+    // Status Upload
+    @Published var statusMsg: String? = nil
+    @Published var isLoading: Bool = false
+    @Published var isUploadSuccess: Bool = false
+    
+    // Form Data
     @Published var name: String = ""
     @Published var desc: String = ""
 
-    private let dbService: FirestoreServiceProtocol
-    private let storageService: CloudStorageProtocol
+    private let db = Firestore.firestore()
 
-    init(
-        dbService: FirestoreServiceProtocol,
-        storageService: CloudStorageProtocol
-    ) {
-        self.dbService = dbService
-        self.storageService = storageService
-    }
-
+    // Ambil Lomba yang statusnya ACTIVE saja (Untuk User Biasa)
     func fetchCompetitions() {
-        // Logika untuk mengambil data kompetisi berstatus 'active'
-        self.competitions = [
-            CompetitionModel(
-                id: "c1",
-                promoterId: "p1",
-                name: "National Debate Open",
-                description: "Kompetisi tahunan tingkat nasional.",
-                eventDate: Date().addingTimeInterval(864000),
-                registrationUrl: "https://bit.ly/reg-ndo",
-                posterStorageUrl: "",
-                status: .active
-            )
-        ]
+        db.collection("competitions")
+            .whereField("status", isEqualTo: "ACTIVE") // Filter hanya lomba aktif
+            .addSnapshotListener { snapshot, error in
+                guard let documents = snapshot?.documents else { return }
+                
+                self.competitions = documents.compactMap { doc -> CompetitionModel? in
+                    let data = doc.data()
+                    return CompetitionModel(
+                        id: doc.documentID,
+                        promoterId: data["promoterId"] as? String ?? "",
+                        name: data["name"] as? String ?? "",
+                        description: data["description"] as? String ?? "",
+                        eventDate: (data["eventDate"] as? Timestamp)?.dateValue() ?? Date(),
+                        registrationUrl: data["registrationUrl"] as? String ?? "",
+                        posterStorageUrl: data["posterUrl"] as? String ?? "",
+                        status: .active
+                    )
+                }
+            }
     }
 
-    func submitCompetitionData(imageData: Data) {
-        Task {
-            do {
-                // Strategi: Kompresi lokal -> Upload Storage -> Save Firestore
-                let compressedData = executeLocalCompression(image: imageData)
-                let downloadUrl = try await storageService.uploadPosterFile(
-                    fileData: compressedData
-                )
-                let data: [String: Any] = [
-                    "name": name,
-                    "description": desc,
-                    "posterUrl": downloadUrl,
-                    "status": ReviewStatus.pending.rawValue,
-                ]
+    // Submit Lomba Baru (Otomatis status PENDING)
+    func submitCompetitionData() {
+        isLoading = true
+        isUploadSuccess = false
+        
+        let newId = UUID().uuidString
+        let promoterId = Auth.auth().currentUser?.uid ?? "unknown_promoter"
+        
+        // Data yang dikirim ke Firebase
+        let data: [String: Any] = [
+            "id": newId,
+            "promoterId": promoterId,
+            "name": name,
+            "description": desc,
+            "posterUrl": "", // Nanti disesuaikan jika Firebase Storage sudah ready
+            "status": "PENDING", // <-- LOGIKA PENDING ADA DI SINI
+            "eventDate": Timestamp(date: Date().addingTimeInterval(864000)),
+            "registrationUrl": "https://docs.google.com/forms"
+        ]
 
-                try await dbService.saveDocument(
-                    collection: "competitions",
-                    documentId: UUID().uuidString,
-                    data: data
-                )
-
-                DispatchQueue.main.async {
-                    self.statusMsg =
-                        "Kompetisi berhasil diunggah dan menunggu moderasi Admin."
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.statusMsg =
-                        "Gagal mengunggah: \(error.localizedDescription)"
+        db.collection("competitions").document(newId).setData(data) { error in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                if let error = error {
+                    self.statusMsg = "Gagal menambahkan: \(error.localizedDescription)"
+                } else {
+                    self.statusMsg = "Berhasil! Lomba berstatus PENDING dan menunggu persetujuan Admin."
+                    self.isUploadSuccess = true
+                    // Reset Form
+                    self.name = ""
+                    self.desc = ""
                 }
             }
         }
-    }
-
-    private func executeLocalCompression(image: Data) -> Data {
-        // Implementasi logika kompresi untuk memenuhi NFR-2.1 (Max 2MB) [cite: 255]
-        return image
     }
 }
