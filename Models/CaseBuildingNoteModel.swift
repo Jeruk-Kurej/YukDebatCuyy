@@ -11,7 +11,7 @@ import Foundation
 /// Includes visibility and feedback states to fulfill UC01 and UC04 integration.
 struct CaseBuildingNoteModel: Codable, Identifiable {
     let id: String
-    let ownerId: String
+    var ownerId: String
     var motionTitle: String
     var argumentsRichText: String
     var visibility: VisibilityType

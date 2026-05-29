@@ -34,6 +34,10 @@ struct ExploreMotionListView: View {
             // LIST MOSI
             LazyVStack(spacing: 12) {
                 ForEach(viewModel.filteredMotions) { motion in
+                    
+                    // PERBAIKAN LOGIKA: Cek langsung ke database lokal (myNotes)
+                    let isSaved = motion.isWishlisted || viewModel.myNotes.contains(where: { $0.motionTitle == motion.title })
+                    
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             HStack {
@@ -53,7 +57,7 @@ struct ExploreMotionListView: View {
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                         
-                        // 2. SEMBUNYIKAN TOMBOL SIMPAN JIKA ROLE = ADMIN
+                        // SEMBUNYIKAN TOMBOL SIMPAN JIKA ROLE = ADMIN
                         if authVM.currentUser?.role != .admin {
                             Divider().padding(.vertical, 4)
                             
@@ -63,17 +67,19 @@ struct ExploreMotionListView: View {
                                 }
                             }) {
                                 HStack {
-                                    Image(systemName: motion.isWishlisted ? "checkmark.circle.fill" : "plus.circle.fill")
-                                    Text(motion.isWishlisted ? "Tersimpan di Catatan" : "Simpan ke Catatan")
+                                    // Gunakan isSaved untuk UI
+                                    Image(systemName: isSaved ? "checkmark.circle.fill" : "plus.circle.fill")
+                                    Text(isSaved ? "Tersimpan di Catatan" : "Simpan ke Catatan")
                                 }
                                 .font(.subheadline.bold())
-                                .foregroundStyle(motion.isWishlisted ? Color.btnPositive : .white)
+                                .foregroundStyle(isSaved ? Color.btnPositive : .white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
-                                .background(motion.isWishlisted ? Color.btnPositive.opacity(0.15) : Color.btnNeutral)
+                                .background(isSaved ? Color.btnPositive.opacity(0.15) : Color.btnNeutral)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
-                            .disabled(motion.isWishlisted)
+                            // Matikan fungsi klik jika isSaved true
+                            .disabled(isSaved)
                         }
                     }
                     .padding(16)
