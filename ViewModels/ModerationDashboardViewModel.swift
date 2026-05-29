@@ -1,46 +1,46 @@
-//
-//  ModerationDashboardViewModel.swift
-//  YukDebatCuyy
-//
-//  Created by Bryan Carlie Lukito Setiawan on 26/05/26.
-//
-
 import Foundation
+import FirebaseFirestore
 import Combine
 
 class ModerationDashboardViewModel: ObservableObject {
+    @Published var pendingList: [CompetitionModel] = []
+    @Published var approvedList: [CompetitionModel] = []
     
-    @Published var pendingCompetitions: [CompetitionModel] = []
-    @Published var errorMessage: String? = nil
-    @Published var actionSuccessMessage: String? = nil
+    private let db = Firestore.firestore()
     
-    private let dbService: FirestoreServiceProtocol
-    private let storageService: CloudStorageProtocol
-    
-    init(dbService: FirestoreServiceProtocol, storageService: CloudStorageProtocol) {
-        self.dbService = dbService
-        self.storageService = storageService
-    }
-    
-    // Fungsi ini wajib ada karena dipanggil di ModerationDashboardView
-    func fetchPendingData() {
-        // Logika untuk mengambil data kompetisi berstatus pending
-        print("Fetching pending data...")
-    }
-    
-    // Fungsi ini wajib ada karena dipanggil di ModerationDashboardView
-    func approveContent(docId: String) {
-        Task {
-            do {
-                try await dbService.updateTransactional(collection: "competitions", documentId: docId, data: ["status": ReviewStatus.active.rawValue])
-                DispatchQueue.main.async {
-                    self.actionSuccessMessage = "Kompetisi berhasil disetujui."
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Gagal menyetujui: \(error.localizedDescription)"
-                }
+    func fetchAllModeration() {
+        db.collection("competitions").addSnapshotListener { snapshot, _ in
+            guard let docs = snapshot?.documents else { return }
+            
+            var tempPending: [CompetitionModel] = []
+            var tempApproved: [CompetitionModel] = []
+            
+            for doc in docs {
+                let data = doc.data()
+                let status = data["status"] as? String ?? "PENDING"
+                
+                let model = CompetitionModel(
+                    id: doc.documentID,
+                    promoterId: data["promoterId"] as? String ?? "",
+                    promoterEmail: data["promoterEmail"] as? String ?? "Unknown Email", // <-- Tangkap emailnya
+                    name: data["name"] as? String ?? "",
+                    description: data["description"] as? String ?? "",
+                    eventDate: (data["eventDate"] as? Timestamp)?.dateValue() ?? Date(),
+                    registrationUrl: data["registrationUrl"] as? String ?? "",
+                    posterStorageUrl: data["posterUrl"] as? String ?? "",
+                    status: ReviewStatus(rawValue: status) ?? .pending
+                )
+                
+                if status == "PENDING" { tempPending.append(model) }
+                else if status == "ACTIVE" { tempApproved.append(model) }
             }
+            
+            self.pendingList = tempPending
+            self.approvedList = tempApproved
         }
+    }
+    
+    func updateStatus(compId: String, to status: String) {
+        db.collection("competitions").document(compId).updateData(["status": status])
     }
 }

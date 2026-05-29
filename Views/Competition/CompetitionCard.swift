@@ -1,55 +1,68 @@
-//
-//  CompetitionCard.swift
-//  YukDebatCuyy
-//
-//  Created by Bryan Carlie Lukito Setiawan on 27/05/26.
-//
-
 import SwiftUI
 
 struct CompetitionCard: View {
     let comp: CompetitionModel
-
+    let isPending: Bool
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(comp.name)
-                .font(.system(.title3, design: .serif, weight: .bold))
-
-            Text(comp.description)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Link(
-                "Daftar Sekarang",
-                destination: URL(string: comp.registrationUrl) ?? URL(
-                    string: "https://google.com"
-                )!
-            )
-            .font(.subheadline.bold())
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity)
-            .background(Color.btnPositive)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+        VStack(alignment: .leading, spacing: 0) {
+            
+            // BAGIAN GAMBAR POSTER (Mendukung URL Dummy dan Base64 Teks)
+            if !comp.posterStorageUrl.isEmpty {
+                if comp.posterStorageUrl.starts(with: "http") {
+                    AsyncImage(url: URL(string: comp.posterStorageUrl)) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Rectangle().fill(Color.gray.opacity(0.2)).overlay(ProgressView())
+                    }
+                    .frame(height: 180)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                    
+                // DECODER BASE64 (Mengubah Teks jadi Gambar)
+                } else if let imageData = Data(base64Encoded: comp.posterStorageUrl, options: .ignoreUnknownCharacters),
+                          let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 180)
+                        .frame(maxWidth: .infinity)
+                        .clipped()
+                }
+            }
+            
+            // BAGIAN TEKS INFORMASI
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(comp.name)
+                        .font(.title3.bold())
+                        .foregroundStyle(Color.textCharcoal)
+                        .lineLimit(1)
+                    
+                    Spacer()
+                    
+                    // BADGE PENDING
+                    if isPending {
+                        Text("PENDING")
+                            .font(.caption.bold())
+                            .padding(.horizontal, 8).padding(.vertical, 4)
+                            .background(Color.orange.opacity(0.2))
+                            .foregroundStyle(Color.orange)
+                            .clipShape(Capsule())
+                    }
+                }
+                
+                Text(comp.description)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            .padding()
         }
-        .padding(20)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.black.opacity(0.05), lineWidth: 1))
+        .padding(.horizontal, 24)
+        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
-}
-
-#Preview {
-    CompetitionCard(
-        comp: CompetitionModel(
-            id: "1",
-            promoterId: "P1",
-            name: "Debat Nasional",
-            description: "Lomba besar",
-            eventDate: Date(),
-            registrationUrl: "",
-            posterStorageUrl: "",
-            status: .active
-        )
-    )
-    .padding()
 }

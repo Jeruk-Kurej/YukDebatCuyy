@@ -12,18 +12,15 @@ struct MainView: View {
     @StateObject private var compViewModel = CompetitionViewModel()
 
     // PERBAIKAN: Menambahkan inisialisasi ModerationDashboardViewModel
-    @StateObject private var modViewModel = ModerationDashboardViewModel(
-        dbService: MockFirestoreService(),
-        storageService: MockCloudStorage()
-    )
+    @StateObject private var modViewModel = ModerationDashboardViewModel()
 
     var body: some View {
         TabView {
-            
+
             // 1. COMPETITION
             CompetitionView()
                 .tabItem { Label("Competition", systemImage: "trophy.fill") }
-            
+
             // 2. SPARRING
             SparringView(
                 viewModel: SparringViewModel(dbService: MockFirestoreService())

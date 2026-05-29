@@ -12,6 +12,7 @@ import Foundation
 struct CompetitionModel: Codable, Identifiable {
     let id: String
     let promoterId: String
+    var promoterEmail: String?
     var name: String
     var description: String
     var eventDate: Date

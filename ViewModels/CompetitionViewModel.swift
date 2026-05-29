@@ -1,78 +1,120 @@
-import Foundation
 import Combine
-import FirebaseFirestore
 import FirebaseAuth
+import FirebaseFirestore
+import Foundation
+import SwiftUI
+import UIKit  // <-- Wajib untuk kompresi dan render UIImage
 
 class CompetitionViewModel: ObservableObject {
-    @Published var competitions: [CompetitionModel] = []
-    
-    // Status Upload
-    @Published var statusMsg: String? = nil
-    @Published var isLoading: Bool = false
-    @Published var isUploadSuccess: Bool = false
-    
+    @Published var activeCompetitions: [CompetitionModel] = []
+    @Published var myPendingCompetitions: [CompetitionModel] = []
+
     // Form Data
     @Published var name: String = ""
     @Published var desc: String = ""
+    @Published var selectedImageData: Data? = nil
+
+    // Status UI
+    @Published var statusMsg: String? = nil
+    @Published var isLoading: Bool = false
+    @Published var isUploadSuccess: Bool = false
 
     private let db = Firestore.firestore()
 
-    // Ambil Lomba yang statusnya ACTIVE saja (Untuk User Biasa)
     func fetchCompetitions() {
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
+
+        db.collection("competitions").whereField("status", isEqualTo: "ACTIVE")
+            .addSnapshotListener { snapshot, _ in
+                guard let docs = snapshot?.documents else { return }
+                self.activeCompetitions = docs.compactMap {
+                    self.mapToModel(doc: $0)
+                }
+            }
+
         db.collection("competitions")
-            .whereField("status", isEqualTo: "ACTIVE") // Filter hanya lomba aktif
-            .addSnapshotListener { snapshot, error in
-                guard let documents = snapshot?.documents else { return }
-                
-                self.competitions = documents.compactMap { doc -> CompetitionModel? in
-                    let data = doc.data()
-                    return CompetitionModel(
-                        id: doc.documentID,
-                        promoterId: data["promoterId"] as? String ?? "",
-                        name: data["name"] as? String ?? "",
-                        description: data["description"] as? String ?? "",
-                        eventDate: (data["eventDate"] as? Timestamp)?.dateValue() ?? Date(),
-                        registrationUrl: data["registrationUrl"] as? String ?? "",
-                        posterStorageUrl: data["posterUrl"] as? String ?? "",
-                        status: .active
-                    )
+            .whereField("promoterId", isEqualTo: currentUserId)
+            .whereField("status", isEqualTo: "PENDING")
+            .addSnapshotListener { snapshot, _ in
+                guard let docs = snapshot?.documents else { return }
+                self.myPendingCompetitions = docs.compactMap {
+                    self.mapToModel(doc: $0)
                 }
             }
     }
 
-    // Submit Lomba Baru (Otomatis status PENDING)
-    func submitCompetitionData() {
-        isLoading = true
-        isUploadSuccess = false
-        
-        let newId = UUID().uuidString
-        let promoterId = Auth.auth().currentUser?.uid ?? "unknown_promoter"
-        
-        // Data yang dikirim ke Firebase
-        let data: [String: Any] = [
-            "id": newId,
-            "promoterId": promoterId,
-            "name": name,
-            "description": desc,
-            "posterUrl": "", // Nanti disesuaikan jika Firebase Storage sudah ready
-            "status": "PENDING", // <-- LOGIKA PENDING ADA DI SINI
-            "eventDate": Timestamp(date: Date().addingTimeInterval(864000)),
-            "registrationUrl": "https://docs.google.com/forms"
-        ]
+    private func mapToModel(doc: QueryDocumentSnapshot) -> CompetitionModel {
+        let data = doc.data()
+        return CompetitionModel(
+            id: doc.documentID,
+            promoterId: data["promoterId"] as? String ?? "",
+            name: data["name"] as? String ?? "",
+            description: data["description"] as? String ?? "",
+            eventDate: (data["eventDate"] as? Timestamp)?.dateValue() ?? Date(),
+            registrationUrl: data["registrationUrl"] as? String ?? "",
+            posterStorageUrl: data["posterUrl"] as? String ?? "",
+            status: ReviewStatus(
+                rawValue: data["status"] as? String ?? "PENDING"
+            ) ?? .pending
+        )
+    }
 
-        db.collection("competitions").document(newId).setData(data) { error in
+    // LOGIKA JALAN TIKUS: Bypass Storage dengan Base64
+    func submitCompetitionData() {
+        guard let currentUserId = Auth.auth().currentUser?.uid,
+            let imageData = selectedImageData
+        else {
+            self.statusMsg = "Select a poster image first!"
+            return
+        }
+
+        isLoading = true
+        self.statusMsg = "Uploading competition..."  // Kasih notif loading awal
+
+        let newDocRef = db.collection("competitions").document()
+
+        guard let uiImage = UIImage(data: imageData),
+            let compressedData = uiImage.jpegData(compressionQuality: 0.1)
+        else {
+            self.statusMsg = "Failed to process image."
+            self.isLoading = false
+            return
+        }
+
+        let base64String = compressedData.base64EncodedString()
+
+        let userEmail = Auth.auth().currentUser?.email ?? "Unknown Email" // Ambil email otomatis
+            
+            let data: [String: Any] = [
+                "id": newDocRef.documentID,
+                "promoterId": currentUserId,
+                "promoterEmail": userEmail, // <-- Simpan email ke database
+                "name": self.name,
+                "description": self.desc,
+                "posterUrl": base64String,
+                "status": "PENDING",
+                "eventDate": Timestamp(date: Date().addingTimeInterval(864000)),
+                "registrationUrl": "https://forms.gle/dummy"
+            ]
+
+        newDocRef.setData(data) { error in
             DispatchQueue.main.async {
                 self.isLoading = false
                 if let error = error {
-                    self.statusMsg = "Gagal menambahkan: \(error.localizedDescription)"
+                    self.statusMsg =
+                        "Failed to save: \(error.localizedDescription)"
                 } else {
-                    self.statusMsg = "Berhasil! Lomba berstatus PENDING dan menunggu persetujuan Admin."
+                    self.statusMsg = "Successfully submitted! Pending approval."
                     self.isUploadSuccess = true
-                    // Reset Form
-                    self.name = ""
-                    self.desc = ""
+                    self.resetForm()
                 }
             }
         }
+    }
+
+    private func resetForm() {
+        self.name = ""
+        self.desc = ""
+        self.selectedImageData = nil
     }
 }
