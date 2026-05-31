@@ -44,7 +44,7 @@ class MotionArchiveViewModel: ObservableObject {
     {
         self.apiProxy = apiProxy
         self.localCache = localCache
-        loadDummyData()
+        loadDefaultMotions()
     }
 
     // MARK: - Methods
@@ -99,10 +99,10 @@ class MotionArchiveViewModel: ObservableObject {
                 self?.isLoading = false
                 if let error = error {
                     self?.statusMessage =
-                        "Failed to submit: \(error.localizedDescription)"
+                        "Gagal mengirim: \(error.localizedDescription)"
                 } else {
                     self?.statusMessage =
-                        "Motion successfully submitted for review!"
+                        "Mosi berhasil dikirim untuk direviu Admin!"
                 }
             }
         }
@@ -217,15 +217,149 @@ class MotionArchiveViewModel: ObservableObject {
         return notes.sorted { $0.updatedAt > $1.updatedAt }
     }
 
-    private func loadDummyData() {
+    /// Populates the initial view with 20 high-quality, uniquely phrased BP motions in Indonesian.
+    private func loadDefaultMotions() {
         motionsList = [
             MotionModel(
                 id: "m1",
                 title:
-                    "This house would ban artificial intelligence in education",
+                    "Melarang secara penuh penggunaan kecerdasan buatan (AI) di seluruh institusi pendidikan formal.",
                 category: "Education",
                 isWishlisted: false
-            )
+            ),
+            MotionModel(
+                id: "m2",
+                title:
+                    "Menyesali glorifikasi budaya kerja berlebihan (hustle culture) di kalangan generasi muda.",
+                category: "Politics & Social",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m3",
+                title:
+                    "Sebagai negara berkembang, memprioritaskan pertumbuhan ekonomi di atas pelestarian lingkungan hidup.",
+                category: "Economy & Business",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m4",
+                title:
+                    "Menetapkan batas maksimal kekayaan pribadi bagi setiap individu warga negara.",
+                category: "Economy & Business",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m5",
+                title:
+                    "Mendukung penerapan sistem empat hari kerja dalam seminggu secara nasional.",
+                category: "Economy & Business",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m6",
+                title:
+                    "Menurunkan batas usia minimum hak pilih dalam pemilihan umum menjadi 16 tahun.",
+                category: "Politics & Social",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m7",
+                title:
+                    "Menyesali munculnya fenomena budaya pembatalan (Cancel Culture) di media sosial.",
+                category: "Politics & Social",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m8",
+                title:
+                    "Melarang segala bentuk kampanye dan iklan politik berbayar di platform media sosial.",
+                category: "Politics & Social",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m9",
+                title:
+                    "Mempercayai bahwa gerakan feminis progresif harus secara aktif menentang institusi pernikahan.",
+                category: "Politics & Social",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m10",
+                title:
+                    "Menghapus sistem hukuman mati untuk semua jenis tindak pidana tanpa terkecuali.",
+                category: "Law & Constitution",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m11",
+                title:
+                    "Mendukung mekanisme pemilihan langsung hakim agung oleh rakyat.",
+                category: "Law & Constitution",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m12",
+                title:
+                    "Memberikan status 'subjek hukum' (legal personhood) kepada entitas ekosistem alam seperti sungai dan hutan.",
+                category: "Law & Constitution",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m13",
+                title:
+                    "Menentang privatisasi program eksplorasi luar angkasa oleh perusahaan komersial.",
+                category: "Science & Tech",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m14",
+                title:
+                    "Menyesali dominasi bahasa asing tertentu sebagai standar utama dalam publikasi jurnal akademik global.",
+                category: "Education",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m15",
+                title:
+                    "Mewajibkan calon orang tua untuk lulus tes kelayakan mengasuh anak sebelum diizinkan memiliki keturunan.",
+                category: "Politics & Social",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m16",
+                title:
+                    "Sebagai Bank Sentral, segera menerbitkan mata uang digital secara independen (CBDC).",
+                category: "Economy & Business",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m17",
+                title:
+                    "Mengizinkan narapidana berpartisipasi dalam uji coba medis berisiko tinggi demi pengurangan masa tahanan.",
+                category: "Law & Constitution",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m18",
+                title:
+                    "Menyesali komersialisasi gerakan keadilan sosial oleh korporasi-korporasi multinasional.",
+                category: "Politics & Social",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m19",
+                title:
+                    "Menerapkan sistem Pendapatan Dasar Universal (Universal Basic Income) untuk membasmi kemiskinan struktural.",
+                category: "Economy & Business",
+                isWishlisted: false
+            ),
+            MotionModel(
+                id: "m20",
+                title:
+                    "Menuntut penikmat seni untuk selalu memisahkan karya seni dari rekam jejak moralitas pembuatnya.",
+                category: "Arts & Culture",
+                isWishlisted: false
+            ),
         ]
     }
 }

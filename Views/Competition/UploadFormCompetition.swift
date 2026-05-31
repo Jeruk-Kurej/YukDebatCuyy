@@ -97,7 +97,6 @@ struct UploadFormCompetition: View {
                     .listRowBackground(Color.white)
                 }
                 .scrollContentBackground(.hidden)
-                .padding(.top, -20)
             }
             .navigationTitle("Add Competition")
             .navigationBarTitleDisplayMode(.inline)

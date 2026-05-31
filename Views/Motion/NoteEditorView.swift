@@ -52,7 +52,6 @@ struct NoteEditorView: View {
                 .listRowBackground(Color.white)
             }
             .scrollContentBackground(.hidden)
-            .padding(.top, -20)
         }
         .navigationTitle(isNewNote ? "Add Note" : "Edit Note")
         .navigationBarTitleDisplayMode(.inline)

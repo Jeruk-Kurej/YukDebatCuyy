@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// A dedicated dashboard for the Host to manage a sparring room.
-/// Facilitates accepting or rejecting pending join requests (FR-2.6).
+/// Facilitates accepting or rejecting pending join requests.
 struct ManageSparringRoomView: View {
 
     // MARK: - Properties
@@ -70,7 +70,7 @@ struct ManageSparringRoomView: View {
                             ForEach(pendingList) { participant in
                                 HStack {
                                     VStack(alignment: .leading) {
-                                        Text("User ID: \(participant.userId)")  // Replace with actual name fetching
+                                        Text("User ID: \(participant.userId)")
                                             .font(.subheadline.bold())
                                         Text(
                                             "Role: \(participant.roleSlot.rawValue) (\(participant.regMode.rawValue))"
@@ -140,7 +140,6 @@ struct ManageSparringRoomView: View {
                     .listRowBackground(Color.white)
                 }
                 .scrollContentBackground(.hidden)
-                .padding(.top, -20)
             }
             .navigationTitle("Manage Room")
             .navigationBarTitleDisplayMode(.inline)

@@ -90,7 +90,6 @@ struct CreateSparringFormView: View {
                     )
                 }
                 .scrollContentBackground(.hidden)
-                .padding(.top, -20)
             }
             .navigationTitle("Create New Room")
             .navigationBarTitleDisplayMode(.inline)

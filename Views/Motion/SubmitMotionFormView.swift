@@ -53,7 +53,6 @@ struct SubmitMotionFormView: View {
                     .listRowBackground(Color.white)
                 }
                 .scrollContentBackground(.hidden)
-                .padding(.top, -20)
             }
             .navigationTitle("Suggest Motion")
             .navigationBarTitleDisplayMode(.inline)

@@ -49,7 +49,6 @@ struct ProvideFeedbackSheet: View {
                     .listRowBackground(Color.white)
                 }
                 .scrollContentBackground(.hidden)
-                .padding(.top, -20)
             }
             .navigationTitle("Evaluate Note")
             .navigationBarTitleDisplayMode(.inline)

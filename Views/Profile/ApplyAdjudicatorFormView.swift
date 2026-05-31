@@ -102,7 +102,6 @@ struct ApplyAdjudicatorFormView: View {
                     .listRowBackground(Color.white)
                 }
                 .scrollContentBackground(.hidden)
-                .padding(.top, -20)
             }
             .navigationTitle("Apply as Adjudicator")
             .navigationBarTitleDisplayMode(.inline)
