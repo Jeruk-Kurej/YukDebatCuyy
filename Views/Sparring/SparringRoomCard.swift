@@ -13,6 +13,8 @@ struct SparringRoomCard: View {
     let room: SparringRoomModel
     @ObservedObject var viewModel: SparringViewModel
 
+    @State private var showManageSheet = false
+
     // MARK: - Body
 
     var body: some View {
@@ -50,9 +52,17 @@ struct SparringRoomCard: View {
 
             // Content Section
             VStack(alignment: .leading, spacing: 4) {
-                Text(room.motionCategory)
-                    .font(.headline)
-                    .foregroundStyle(Color.textCharcoal)
+                HStack {
+                    Text(room.motionCategory)
+                        .font(.headline)
+                        .foregroundStyle(Color.textCharcoal)
+
+                    if room.accessType == .privateAccess {
+                        Image(systemName: "lock.fill")
+                            .font(.caption)
+                            .foregroundStyle(Color.btnNegative)
+                    }
+                }
 
                 Text(room.specialNotes)
                     .font(.subheadline)
@@ -93,7 +103,17 @@ struct SparringRoomCard: View {
 
                 Spacer()
 
-                if viewModel.isUserInRoom(room: room) {
+                if viewModel.isUserHost(room: room) {
+                    Button("Manage") {
+                        showManageSheet = true
+                    }
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.accentWalnut)
+                    .clipShape(Capsule())
+                } else if viewModel.isUserInRoom(room: room) {
                     Text("Joined")
                         .font(.subheadline.bold())
                         .foregroundStyle(Color.btnPositive)
@@ -128,6 +148,9 @@ struct SparringRoomCard: View {
             )
         )
         .shadow(color: Color.black.opacity(0.04), radius: 10, y: 5)
+        .sheet(isPresented: $showManageSheet) {
+            ManageSparringRoomView(room: room, viewModel: viewModel)
+        }
     }
 }
 

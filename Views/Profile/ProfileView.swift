@@ -6,7 +6,6 @@
 import SwiftUI
 
 /// Displays the user's account details, role status, and settings options.
-/// Acts as the main entry point for adjudicator applications and account management.
 struct ProfileView: View {
 
     // MARK: - Properties
@@ -69,6 +68,19 @@ struct ProfileView: View {
                                 icon: "person.text.rectangle",
                                 title: "Edit Account Information"
                             )
+
+                            // NEW: Sparring Feedbacks Link (UC04)
+                            Divider().padding(.leading, 40)
+                            NavigationLink(
+                                destination: MySparringFeedbacksView()
+                                    .environmentObject(authVM)
+                            ) {
+                                ProfileMenuRow(
+                                    icon: "star.bubble.fill",
+                                    title: "My Sparring Feedbacks"
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
 
                             if authVM.currentUser?.role == .debater {
                                 Divider().padding(.leading, 40)

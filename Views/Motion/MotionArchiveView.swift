@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// The main entry point for the Motion feature.
-/// Manages the navigation between Explore Motions and My Case Notes based on user roles.
+/// Manages the navigation between Explore Motions, My Case Notes, and Community Notes.
 struct MotionArchiveView: View {
 
     // MARK: - Properties
@@ -29,16 +29,19 @@ struct MotionArchiveView: View {
                 } else {
                     VStack(spacing: 0) {
                         Picker("Navigation Menu", selection: $selectedTab) {
-                            Text("Explore Motions").tag(0)
-                            Text("My Case Notes").tag(1)
+                            Text("Explore").tag(0)
+                            Text("My Notes").tag(1)
+                            Text("Community").tag(2)
                         }
                         .pickerStyle(.segmented)
                         .padding()
 
                         if selectedTab == 0 {
                             ExploreMotionListView(viewModel: viewModel)
-                        } else {
+                        } else if selectedTab == 1 {
                             MyNotesListView(viewModel: viewModel)
+                        } else {
+                            CommunityNotesView(viewModel: viewModel)
                         }
                     }
 

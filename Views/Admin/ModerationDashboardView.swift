@@ -5,8 +5,7 @@
 
 import SwiftUI
 
-/// The central hub for Admin users to moderate competitions and adjudicator requests.
-/// Separates pending tasks from approved historical data.
+/// The central hub for Admin users to moderate competitions, adjudicators, and system content.
 struct ModerationDashboardView: View {
 
     // MARK: - Properties
@@ -23,8 +22,9 @@ struct ModerationDashboardView: View {
 
                 VStack(spacing: 0) {
                     Picker("Admin Tabs", selection: $selectedTab) {
-                        Text("Pending Approval").tag(0)
-                        Text("Approved History").tag(1)
+                        Text("Pending").tag(0)
+                        Text("History").tag(1)
+                        Text("Users & Content").tag(2)
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal, 20)
@@ -34,6 +34,7 @@ struct ModerationDashboardView: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 16) {
                             if selectedTab == 0 {
+                                // PENDING TAB
                                 Section(
                                     header: Text("Competitions").font(
                                         .subheadline.bold()
@@ -46,10 +47,12 @@ struct ModerationDashboardView: View {
                                     )
                                 ) {
                                     if viewModel.pendingList.isEmpty {
-                                        Text("No pending competitions.")
-                                            .font(.caption).foregroundStyle(
-                                                .secondary
-                                            ).padding(.horizontal, 24)
+                                        Text("No pending competitions.").font(
+                                            .caption
+                                        ).foregroundStyle(.secondary).padding(
+                                            .horizontal,
+                                            24
+                                        )
                                     } else {
                                         ForEach(viewModel.pendingList) { comp in
                                             AdminPendingCard(comp: comp) {
@@ -95,7 +98,8 @@ struct ModerationDashboardView: View {
                                     }
                                 }
 
-                            } else {
+                            } else if selectedTab == 1 {
+                                // HISTORY TAB
                                 Section(
                                     header: Text("Approved Competitions").font(
                                         .subheadline.bold()
@@ -145,6 +149,102 @@ struct ModerationDashboardView: View {
                                         }
                                     }
                                 }
+
+                            } else {
+                                // NEW: USERS & CONTENT TAB (UC06)
+                                Section(
+                                    header: Text("User Management").font(
+                                        .subheadline.bold()
+                                    ).foregroundStyle(.blue).padding(
+                                        .horizontal,
+                                        24
+                                    ).frame(
+                                        maxWidth: .infinity,
+                                        alignment: .leading
+                                    )
+                                ) {
+                                    ForEach(viewModel.allUsers) { user in
+                                        HStack {
+                                            VStack(alignment: .leading) {
+                                                Text(user.name).font(.headline)
+                                                Text(user.email).font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                            Spacer()
+                                            Button(action: {
+                                                viewModel.suspendUser(
+                                                    userId: user.id,
+                                                    isActive: !user.isActive
+                                                )
+                                            }) {
+                                                Text(
+                                                    user.isActive
+                                                        ? "Suspend"
+                                                        : "Unsuspend"
+                                                )
+                                                .font(.caption.bold())
+                                                .foregroundStyle(.white)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(
+                                                    user.isActive
+                                                        ? Color.btnNegative
+                                                        : Color.btnPositive
+                                                )
+                                                .clipShape(Capsule())
+                                            }
+                                        }
+                                        .padding(16).background(Color.white)
+                                        .clipShape(
+                                            RoundedRectangle(cornerRadius: 12)
+                                        )
+                                        .padding(.horizontal, 20)
+                                    }
+                                }
+
+                                Divider().padding(.vertical, 16)
+
+                                Section(
+                                    header: Text("Public Notes Moderation")
+                                        .font(.subheadline.bold())
+                                        .foregroundStyle(.red).padding(
+                                            .horizontal,
+                                            24
+                                        ).frame(
+                                            maxWidth: .infinity,
+                                            alignment: .leading
+                                        )
+                                ) {
+                                    ForEach(viewModel.publicNotes) { note in
+                                        HStack {
+                                            VStack(alignment: .leading) {
+                                                Text(note.motionTitle).font(
+                                                    .headline
+                                                ).lineLimit(1)
+                                                Text("ID: \(note.id)").font(
+                                                    .caption
+                                                ).foregroundStyle(.secondary)
+                                                    .lineLimit(1)
+                                            }
+                                            Spacer()
+                                            Button(action: {
+                                                viewModel.deletePublicNote(
+                                                    noteId: note.id
+                                                )
+                                            }) {
+                                                Image(systemName: "trash.fill")
+                                                    .foregroundStyle(
+                                                        Color.btnNegative
+                                                    )
+                                            }
+                                        }
+                                        .padding(16).background(Color.white)
+                                        .clipShape(
+                                            RoundedRectangle(cornerRadius: 12)
+                                        )
+                                        .padding(.horizontal, 20)
+                                    }
+                                }
                             }
                         }
                         .padding(.vertical, 8)
@@ -160,6 +260,7 @@ struct ModerationDashboardView: View {
 }
 
 // MARK: - Preview
+
 #Preview {
     ModerationDashboardView(viewModel: ModerationDashboardViewModel())
 }

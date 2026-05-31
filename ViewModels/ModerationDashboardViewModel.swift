@@ -1,22 +1,33 @@
+//
+//  ModerationDashboardViewModel.swift
+//  YukDebatCuyy
+//
+
 import Combine
 import FirebaseFirestore
 import Foundation
 
 /// Provides comprehensive data aggregation for the Admin Moderation Dashboard.
-/// Handles approvals and rejections for Competitions and Adjudicator Requests.
+/// Handles approvals, rejections, user suspensions, and public content moderation.
 class ModerationDashboardViewModel: ObservableObject {
 
     // MARK: - Published Properties
+
     @Published var pendingList: [CompetitionModel] = []
     @Published var approvedList: [CompetitionModel] = []
     @Published var pendingAdjudicators: [AdjudicatorRequestModel] = []
     @Published var approvedAdjudicators: [AdjudicatorRequestModel] = []
 
+    @Published var allUsers: [UserModel] = []
+    @Published var publicNotes: [CaseBuildingNoteModel] = []
+
     // MARK: - Private Properties
+
     private let db = Firestore.firestore()
 
     // MARK: - Methods
-    /// Subscribes to all pending and approved moderation entities.
+
+    /// Subscribes to all pending and approved moderation entities, including users and public notes.
     func fetchAllModeration() {
         // Fetch Competitions
         db.collection("competitions").addSnapshotListener { snapshot, _ in
@@ -85,16 +96,59 @@ class ModerationDashboardViewModel: ObservableObject {
             self.pendingAdjudicators = tempPendingAdj
             self.approvedAdjudicators = tempApprovedAdj
         }
+
+        // Fetch All Users for Suspension Management
+        db.collection("users").addSnapshotListener { snapshot, _ in
+            guard let docs = snapshot?.documents else { return }
+            self.allUsers = docs.compactMap { doc in
+                let data = doc.data()
+                return UserModel(
+                    id: doc.documentID,
+                    name: data["name"] as? String ?? "Unknown",
+                    email: data["email"] as? String ?? "",
+                    role: UserRole(
+                        rawValue: data["role"] as? String ?? "DEBATER"
+                    ) ?? .debater,
+                    isActive: data["isActive"] as? Bool ?? true,
+                    createdAt: (data["createdAt"] as? Timestamp)?.dateValue()
+                        ?? Date()
+                )
+            }
+        }
+
+        // Fetch Public Notes for Content Moderation
+        db.collection("case_notes").whereField(
+            "visibility",
+            isEqualTo: "PUBLIC"
+        ).addSnapshotListener { snapshot, _ in
+            guard let docs = snapshot?.documents else { return }
+            self.publicNotes = docs.compactMap { doc in
+                let data = doc.data()
+                return CaseBuildingNoteModel(
+                    id: doc.documentID,
+                    ownerId: data["ownerId"] as? String ?? "",
+                    motionTitle: data["motionTitle"] as? String ?? "",
+                    argumentsRichText: data["argumentsRichText"] as? String
+                        ?? "",
+                    visibility: .publicAccess,
+                    isFeedbackRequested: data["isFeedbackRequested"] as? Bool
+                        ?? false,
+                    updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue()
+                        ?? Date(),
+                    feedbackText: data["feedbackText"] as? String,
+                    feedbackProviderName: data["feedbackProviderName"]
+                        as? String
+                )
+            }
+        }
     }
 
-    /// Updates the visibility status of a competition.
     func updateStatus(compId: String, to status: String) {
         db.collection("competitions").document(compId).updateData([
             "status": status
         ])
     }
 
-    /// Grants adjudicator privileges to a user securely via Firestore Batch writes.
     func approveAdjudicator(reqId: String, userId: String) {
         let batch = db.batch()
         let reqRef = db.collection("adjudicator_requests").document(reqId)
@@ -110,5 +164,17 @@ class ModerationDashboardViewModel: ObservableObject {
                 )
             }
         }
+    }
+
+    /// Toggles the suspension state of a user.
+    func suspendUser(userId: String, isActive: Bool) {
+        db.collection("users").document(userId).updateData([
+            "isActive": isActive
+        ])
+    }
+
+    /// Hard deletes a public note that violates community guidelines.
+    func deletePublicNote(noteId: String) {
+        db.collection("case_notes").document(noteId).delete()
     }
 }

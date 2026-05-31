@@ -1,3 +1,8 @@
+//
+//  MotionArchiveViewModel.swift
+//  YukDebatCuyy
+//
+
 import Combine
 import FirebaseAuth
 import FirebaseFirestore
@@ -8,13 +13,15 @@ import SwiftUI
 class MotionArchiveViewModel: ObservableObject {
 
     // MARK: - Published Properties
+
     @Published var motionsList: [MotionModel] = []
     @Published var searchText: String = ""
     @Published var myNotes: [CaseBuildingNoteModel] = []
-    @Published var savedNotes: [CaseBuildingNoteModel] = []
+    @Published var communityNotes: [CaseBuildingNoteModel] = []
     @Published var isGenerating: Bool = false
 
     // MARK: - Computed Properties
+
     var filteredMotions: [MotionModel] {
         if searchText.isEmpty { return motionsList }
         return motionsList.filter {
@@ -22,18 +29,13 @@ class MotionArchiveViewModel: ObservableObject {
         }
     }
 
-    var filteredNotes: [CaseBuildingNoteModel] {
-        if searchText.isEmpty { return myNotes }
-        return myNotes.filter {
-            $0.motionTitle.localizedCaseInsensitiveContains(searchText)
-        }
-    }
-
     // MARK: - Private Properties
+
     private let apiProxy: CloudFunctionsProtocol
     private let localCache: CoreDataStorageProtocol
 
     // MARK: - Initialization
+
     init(apiProxy: CloudFunctionsProtocol, localCache: CoreDataStorageProtocol)
     {
         self.apiProxy = apiProxy
@@ -42,6 +44,7 @@ class MotionArchiveViewModel: ObservableObject {
     }
 
     // MARK: - Methods
+
     /// Fetches a random debate motion from an external API with cooldown protection.
     func triggerFetchMotion() {
         guard !isGenerating else { return }
@@ -55,8 +58,8 @@ class MotionArchiveViewModel: ObservableObject {
                 )
                 let newMotion = MotionModel(
                     id: response["id"] as? String ?? UUID().uuidString,
-                    title: response["title"] as? String ?? "Mosi Baru",
-                    category: response["category"] as? String ?? "Umum",
+                    title: response["title"] as? String ?? "New Motion",
+                    category: response["category"] as? String ?? "General",
                     isWishlisted: false
                 )
 
@@ -94,7 +97,7 @@ class MotionArchiveViewModel: ObservableObject {
         saveNote(newNote)
     }
 
-    /// Persists note updates to Firestore, ensuring adjudicator feedback is not overwritten.
+    /// Persists note updates to Firestore.
     func saveNote(_ note: CaseBuildingNoteModel) {
         var noteToSave = note
         if noteToSave.ownerId == "user_me" || noteToSave.ownerId.isEmpty {
@@ -134,10 +137,6 @@ class MotionArchiveViewModel: ObservableObject {
         ])
     }
 
-    func deleteNote(at offsets: IndexSet) {
-        // Placeholder for swipe-to-delete local memory logic if needed
-    }
-
     func deleteNoteFromFirestore(noteId: String) {
         let db = Firestore.firestore()
         db.collection("case_notes").document(noteId).delete { error in
@@ -152,33 +151,53 @@ class MotionArchiveViewModel: ObservableObject {
         db.collection("case_notes").whereField("ownerId", isEqualTo: userId)
             .addSnapshotListener { snapshot, error in
                 guard let documents = snapshot?.documents else { return }
-
-                self.myNotes = documents.compactMap { doc in
-                    let data = doc.data()
-                    let visibilityStr =
-                        data["visibility"] as? String ?? "PRIVATE"
-                    let visibility: VisibilityType =
-                        (visibilityStr == "PUBLIC" || visibilityStr == "public")
-                        ? .publicAccess : .privateAccess
-
-                    return CaseBuildingNoteModel(
-                        id: doc.documentID,
-                        ownerId: data["ownerId"] as? String ?? "",
-                        motionTitle: data["motionTitle"] as? String ?? "",
-                        argumentsRichText: data["argumentsRichText"] as? String
-                            ?? "",
-                        visibility: visibility,
-                        isFeedbackRequested: data["isFeedbackRequested"]
-                            as? Bool ?? false,
-                        updatedAt: (data["updatedAt"] as? Timestamp)?
-                            .dateValue() ?? Date(),
-                        feedbackText: data["feedbackText"] as? String,
-                        feedbackProviderName: data["feedbackProviderName"]
-                            as? String
-                    )
-                }
-                self.myNotes.sort { $0.updatedAt > $1.updatedAt }
+                self.myNotes = self.mapDocumentsToNotes(documents)
             }
+    }
+
+    /// Fetches all public notes for the community feed.
+    func fetchCommunityNotes() {
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
+
+        let db = Firestore.firestore()
+        db.collection("case_notes")
+            .whereField("visibility", isEqualTo: "PUBLIC")
+            .addSnapshotListener { snapshot, error in
+                guard let documents = snapshot?.documents else { return }
+
+                let allPublic = self.mapDocumentsToNotes(documents)
+                // Filter out user's own notes so they only see others' notes
+                self.communityNotes = allPublic.filter {
+                    $0.ownerId != currentUserId
+                }
+            }
+    }
+
+    private func mapDocumentsToNotes(_ documents: [QueryDocumentSnapshot])
+        -> [CaseBuildingNoteModel]
+    {
+        let notes = documents.compactMap { doc -> CaseBuildingNoteModel? in
+            let data = doc.data()
+            let visibilityStr = data["visibility"] as? String ?? "PRIVATE"
+            let visibility: VisibilityType =
+                (visibilityStr == "PUBLIC" || visibilityStr == "public")
+                ? .publicAccess : .privateAccess
+
+            return CaseBuildingNoteModel(
+                id: doc.documentID,
+                ownerId: data["ownerId"] as? String ?? "",
+                motionTitle: data["motionTitle"] as? String ?? "",
+                argumentsRichText: data["argumentsRichText"] as? String ?? "",
+                visibility: visibility,
+                isFeedbackRequested: data["isFeedbackRequested"] as? Bool
+                    ?? false,
+                updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue()
+                    ?? Date(),
+                feedbackText: data["feedbackText"] as? String,
+                feedbackProviderName: data["feedbackProviderName"] as? String
+            )
+        }
+        return notes.sorted { $0.updatedAt > $1.updatedAt }
     }
 
     private func loadDummyData() {
@@ -186,8 +205,8 @@ class MotionArchiveViewModel: ObservableObject {
             MotionModel(
                 id: "m1",
                 title:
-                    "Dewan ini akan melarang penggunaan AI sebagai instrumen kelulusan",
-                category: "Pendidikan & Teknologi",
+                    "This house would ban artificial intelligence in education",
+                category: "Education & Tech",
                 isWishlisted: false
             )
         ]
