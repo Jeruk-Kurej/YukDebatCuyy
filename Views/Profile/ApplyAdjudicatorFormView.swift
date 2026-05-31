@@ -1,22 +1,32 @@
+//
+//  ApplyAdjudicatorFormView.swift
+//  YukDebatCuyy
+//
+
 import PhotosUI
 import SwiftUI
 
+/// Provides a form for Debaters to submit their credentials to upgrade to an Adjudicator role.
 struct ApplyAdjudicatorFormView: View {
+
+    // MARK: - Properties
+
     @ObservedObject var viewModel: AdjudicatorRequestViewModel
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authVM: AuthViewModel
 
     @State private var selectedItem: PhotosPickerItem? = nil
 
+    // MARK: - Body
+
     var body: some View {
         NavigationStack {
-            // PERBAIKAN STYLE: Background Cream Khas YukDebat
             ZStack {
                 Color.bgCream.ignoresSafeArea()
 
                 Form {
                     Section(
-                        header: Text("Sertifikat / Bukti Kompetensi").font(
+                        header: Text("Certificate / Proof of Competence").font(
                             .caption.bold()
                         )
                     ) {
@@ -29,22 +39,23 @@ struct ApplyAdjudicatorFormView: View {
                                 if let imageData = viewModel.selectedImageData,
                                     let uiImage = UIImage(data: imageData)
                                 {
-                                    Image(uiImage: uiImage).resizable()
+                                    Image(uiImage: uiImage)
+                                        .resizable()
                                         .scaledToFill()
-                                        .frame(height: 200).clipShape(
+                                        .frame(height: 200)
+                                        .clipShape(
                                             RoundedRectangle(cornerRadius: 12)
                                         )
                                 } else {
                                     VStack(spacing: 12) {
                                         Image(systemName: "doc.badge.plus")
                                             .font(.system(size: 40))
-                                        Text("Upload Sertifikat").font(
-                                            .headline
-                                        )
+                                        Text("Upload Certificate")
+                                            .font(.headline)
                                     }
-                                    .foregroundStyle(Color.accentWalnut).frame(
-                                        maxWidth: .infinity
-                                    ).frame(height: 150)
+                                    .foregroundStyle(Color.accentWalnut)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 150)
                                     .background(Color.accentWalnut.opacity(0.1))
                                     .clipShape(
                                         RoundedRectangle(cornerRadius: 12)
@@ -74,32 +85,33 @@ struct ApplyAdjudicatorFormView: View {
                         }
                         .padding(.vertical, 8)
                     }
-                    .listRowBackground(Color.white)  // PERBAIKAN STYLE
+                    .listRowBackground(Color.white)
 
                     Section(
-                        header: Text("Pengalaman Debat/Penjurian").font(
+                        header: Text("Debate / Adjudicating Experience").font(
                             .caption.bold()
                         )
                     ) {
                         TextField(
-                            "Ceritakan pengalaman Anda...",
+                            "Describe your experience...",
                             text: $viewModel.experience,
                             axis: .vertical
                         )
                         .frame(minHeight: 100)
                     }
-                    .listRowBackground(Color.white)  // PERBAIKAN STYLE
+                    .listRowBackground(Color.white)
                 }
                 .scrollContentBackground(.hidden)
-                .padding(.top, -20)  // PERBAIKAN UX: Mengurangi jarak kosong di atas
+                .padding(.top, -20)
             }
-            .navigationTitle("Daftar Menjadi Juri")
+            .navigationTitle("Apply as Adjudicator")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { dismiss() }.foregroundStyle(
-                        Color.btnNegative
-                    )
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundStyle(Color.btnNegative)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Submit") {
@@ -124,4 +136,11 @@ struct ApplyAdjudicatorFormView: View {
             }
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    ApplyAdjudicatorFormView(viewModel: AdjudicatorRequestViewModel())
+        .environmentObject(AuthViewModel())
 }

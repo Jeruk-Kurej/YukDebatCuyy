@@ -1,14 +1,25 @@
+//
+//  SparringView.swift
+//  YukDebatCuyy
+//
+
 import SwiftUI
 
 /// Renders the Sparring Lobby UI (UC02).
 /// Displays dynamic match options and clean contextual separation for accessibility states.
 struct SparringView: View {
 
+    // MARK: - Properties
+
     @ObservedObject var viewModel: SparringViewModel
+
+    // MARK: - Initialization
 
     init(viewModel: SparringViewModel) {
         self.viewModel = viewModel
     }
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
@@ -18,7 +29,7 @@ struct SparringView: View {
                 ScrollView(showsIndicators: false) {
                     LazyVStack(spacing: 16) {
                         if viewModel.lobbyRooms.isEmpty {
-                            Text("Belum ada ruang sparring.")
+                            Text("No sparring rooms available.")
                                 .font(.system(.body, design: .serif))
                                 .foregroundStyle(
                                     Color.textCharcoal.opacity(0.6)
@@ -31,13 +42,12 @@ struct SparringView: View {
                             SparringRoomCard(room: room, viewModel: viewModel)
                         }
                     }
-                    // PERBAIKAN HIG: Jarak atas compact, dan jarak bawah aman dari Tab Bar
                     .padding(.horizontal, 24)
                     .padding(.top, 16)
                     .padding(.bottom, 120)
                 }
 
-                // Floating Action Button (FAB)
+                // Floating Action Button
                 Button(action: { viewModel.isShowingCreateRoom = true }) {
                     Image(systemName: "plus")
                         .font(.title2.bold())
@@ -45,15 +55,20 @@ struct SparringView: View {
                         .frame(width: 60, height: 60)
                         .background(Color.btnPositive)
                         .clipShape(Circle())
-                        // PERBAIKAN STYLE: Shadow konsisten dan elegan
-                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                        .shadow(
+                            color: Color.black.opacity(0.15),
+                            radius: 8,
+                            x: 0,
+                            y: 4
+                        )
                 }
-                // PERBAIKAN PLACEMENT: Konsisten di semua page
                 .padding(.trailing, 24)
                 .padding(.bottom, 110)
             }
             .navigationTitle("Sparring Lobby")
-            .onAppear { viewModel.listenToRoom(roomId: "default_room") }
+            .onAppear {
+                viewModel.listenToRoom(roomId: "default_room")
+            }
             .sheet(isPresented: $viewModel.isShowingCreateRoom) {
                 CreateSparringFormView(viewModel: viewModel)
             }
@@ -64,6 +79,7 @@ struct SparringView: View {
 }
 
 // MARK: - Preview
+
 #Preview {
     SparringView(
         viewModel: SparringViewModel(dbService: MockFirestoreService())

@@ -1,8 +1,20 @@
+//
+//  ModerationDashboardView.swift
+//  YukDebatCuyy
+//
+
 import SwiftUI
 
+/// The central hub for Admin users to moderate competitions and adjudicator requests.
+/// Separates pending tasks from approved historical data.
 struct ModerationDashboardView: View {
+
+    // MARK: - Properties
+
     @ObservedObject var viewModel: ModerationDashboardViewModel
     @State private var selectedTab = 0
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
@@ -22,7 +34,6 @@ struct ModerationDashboardView: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 16) {
                             if selectedTab == 0 {
-                                // --- SEKSI 1: KOMPETISI PENDING ---
                                 Section(
                                     header: Text("Competitions").font(
                                         .subheadline.bold()
@@ -35,12 +46,10 @@ struct ModerationDashboardView: View {
                                     )
                                 ) {
                                     if viewModel.pendingList.isEmpty {
-                                        Text("No pending competitions.").font(
-                                            .caption
-                                        ).foregroundStyle(.secondary).padding(
-                                            .horizontal,
-                                            24
-                                        )
+                                        Text("No pending competitions.")
+                                            .font(.caption).foregroundStyle(
+                                                .secondary
+                                            ).padding(.horizontal, 24)
                                     } else {
                                         ForEach(viewModel.pendingList) { comp in
                                             AdminPendingCard(comp: comp) {
@@ -57,7 +66,6 @@ struct ModerationDashboardView: View {
 
                                 Divider().padding(.vertical, 16)
 
-                                // --- SEKSI 2: JURI PENDING ---
                                 Section(
                                     header: Text("Adjudicator Requests").font(
                                         .subheadline.bold()
@@ -88,8 +96,6 @@ struct ModerationDashboardView: View {
                                 }
 
                             } else {
-                                // --- TAB 2: HISTORY LIST ---
-                                // SEKSI 1: HISTORY KOMPETISI
                                 Section(
                                     header: Text("Approved Competitions").font(
                                         .subheadline.bold()
@@ -109,14 +115,13 @@ struct ModerationDashboardView: View {
                                     } else {
                                         ForEach(viewModel.approvedList) {
                                             comp in
-                                            AdminHistoryRow(comp: comp)  // DIJAMIN TANPA TOMBOL
+                                            AdminHistoryRow(comp: comp)
                                         }
                                     }
                                 }
 
                                 Divider().padding(.vertical, 16)
 
-                                // SEKSI 2: HISTORY JURI
                                 Section(
                                     header: Text("Approved Adjudicators").font(
                                         .subheadline.bold()
@@ -136,7 +141,7 @@ struct ModerationDashboardView: View {
                                     } else {
                                         ForEach(viewModel.approvedAdjudicators)
                                         { req in
-                                            AdminAdjudicatorHistoryRow(req: req)  // DIJAMIN TANPA TOMBOL
+                                            AdminAdjudicatorHistoryRow(req: req)
                                         }
                                     }
                                 }
@@ -152,4 +157,9 @@ struct ModerationDashboardView: View {
             .onAppear { viewModel.fetchAllModeration() }
         }
     }
+}
+
+// MARK: - Preview
+#Preview {
+    ModerationDashboardView(viewModel: ModerationDashboardViewModel())
 }

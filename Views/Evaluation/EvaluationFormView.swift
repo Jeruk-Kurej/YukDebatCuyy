@@ -1,89 +1,71 @@
 //
 //  EvaluationFormView.swift
-//  YukDebat
-//
-//  Created by Mario Ruby Ariesusandi  on 29-05-2026.
+//  YukDebatCuyy
 //
 
 import SwiftUI
 
+/// A form for Adjudicators to submit narrative feedback for a sparring session.
 struct EvaluationFormView: View {
-    @ObservedObject var motionViewModel: MotionArchiveViewModel
-    let noteToEvaluate: CaseBuildingNoteModel
     
+    // MARK: - Properties
+    
+    @ObservedObject var viewModel: EvaluationViewModel
+    let room: SparringRoomModel
     @Environment(\.dismiss) var dismiss
     
-    @State private var matterScore: Double = 75
-    @State private var mannerScore: Double = 75
-    @State private var methodScore: Double = 75
-    @State private var feedbackText: String = ""
-    @State private var isSubmitting = false
+    @State private var narrativeFeedback: String = ""
+    
+    // MARK: - Body
     
     var body: some View {
-        Form {
-            Section(header: Text("Argumen Debater").font(.caption.bold())) {
-                Text(noteToEvaluate.argumentsRichText)
-                    .font(.system(.body, design: .serif))
-                    .padding(.vertical, 8)
-            }
-            .listRowBackground(Color.white)
-            
-            Section(header: Text("Rubrik Penilaian (1-100)").font(.caption.bold())) {
-                VStack(alignment: .leading) {
-                    Text("Matter (Isi & Logika): \(Int(matterScore))").font(.subheadline.bold())
-                    Slider(value: $matterScore, in: 60...90, step: 1).tint(Color.btnPositive)
-                }
-                .padding(.vertical, 4)
+        NavigationStack {
+            ZStack {
+                Color.bgCream.ignoresSafeArea()
                 
-                VStack(alignment: .leading) {
-                    Text("Manner (Gaya & Penyampaian): \(Int(mannerScore))").font(.subheadline.bold())
-                    Slider(value: $mannerScore, in: 60...90, step: 1).tint(Color.accentWalnut)
-                }
-                .padding(.vertical, 4)
-                
-                VStack(alignment: .leading) {
-                    Text("Method (Struktur & Respons): \(Int(methodScore))").font(.subheadline.bold())
-                    Slider(value: $methodScore, in: 60...90, step: 1).tint(Color.btnNeutral)
-                }
-                .padding(.vertical, 4)
-            }
-            .listRowBackground(Color.white)
-            
-            Section(header: Text("Komentar Juri").font(.caption.bold())) {
-                TextEditor(text: $feedbackText)
-                    .frame(minHeight: 120)
-            }
-            .listRowBackground(Color.white)
-            
-            Button(action: submitEvaluation) {
-                HStack {
-                    Spacer()
-                    if isSubmitting {
-                        ProgressView().tint(.white)
-                    } else {
-                        Text("Kirim Hasil Evaluasi").fontWeight(.bold)
+                Form {
+                    Section(header: Text("Narrative Feedback").font(.caption.bold())) {
+                        TextEditor(text: $narrativeFeedback)
+                            .frame(minHeight: 200)
                     }
-                    Spacer()
+                    .listRowBackground(Color.white)
                 }
-                .foregroundStyle(.white)
+                .scrollContentBackground(.hidden)
+                .padding(.top, -20)
             }
-            .listRowBackground(feedbackText.isEmpty ? Color.gray : Color.btnPositive)
-            .disabled(feedbackText.isEmpty || isSubmitting)
-        }
-        .scrollContentBackground(.hidden)
-        .background(Color.bgCream)
-        .navigationTitle("Evaluasi Kasus")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-    
-    private func submitEvaluation() {
-        isSubmitting = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            if let index = motionViewModel.savedNotes.firstIndex(where: { $0.id == noteToEvaluate.id }) {
-                motionViewModel.savedNotes[index].isFeedbackRequested = false
+            .navigationTitle("Feedback Sheet")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundStyle(Color.btnNegative)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Submit") {
+                        // TODO: Implement submission logic in ViewModel for sparring room feedback
+                        dismiss()
+                    }
+                    .fontWeight(.bold)
+                    .foregroundStyle(narrativeFeedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Color.btnPositive)
+                    .disabled(narrativeFeedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
             }
-            isSubmitting = false
-            dismiss()
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    EvaluationFormView(
+        viewModel: EvaluationViewModel(),
+        room: SparringRoomModel(
+            id: "1", hostId: "u1", scheduledTime: Date(), motionCategory: "Test",
+            specialNotes: "", meetingLink: "", accessType: .publicAccess, state: .ongoing,
+            participants: [],
+            isAdjudicatorNeeded: true
+        )
+    )
 }

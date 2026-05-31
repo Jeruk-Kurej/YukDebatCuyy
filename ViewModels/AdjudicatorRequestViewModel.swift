@@ -1,26 +1,28 @@
-//
-//  AdjudicatorRequestViewModel.swift
-//  YukDebatCuyy
-//
-//  Created by Bryan Carlie Lukito Setiawan on 30/05/26.
-//
-
+import Combine
 import FirebaseAuth
 import FirebaseFirestore
 import Foundation
-import Combine
+import SwiftUI
+import UIKit
 
+/// Manages the user flow for requesting an Adjudicator Role Upgrade.
 class AdjudicatorRequestViewModel: ObservableObject {
+
+    // MARK: - Published Properties (Form)
     @Published var experience: String = ""
     @Published var selectedImageData: Data? = nil
 
+    // MARK: - Published Properties (State)
     @Published var statusMsg: String? = nil
     @Published var isLoading: Bool = false
     @Published var isSuccess: Bool = false
     @Published var hasPendingRequest: Bool = false
 
+    // MARK: - Private Properties
     private let db = Firestore.firestore()
 
+    // MARK: - Methods
+    /// Checks if the current user already has an ongoing upgrade request.
     func checkExistingRequest() {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         db.collection("adjudicator_requests")
@@ -34,6 +36,7 @@ class AdjudicatorRequestViewModel: ObservableObject {
             }
     }
 
+    /// Encodes the certificate image to Base64 and submits the application to Firestore.
     func submitRequest(userName: String, userEmail: String) {
         guard let userId = Auth.auth().currentUser?.uid,
             let imageData = selectedImageData
@@ -57,13 +60,10 @@ class AdjudicatorRequestViewModel: ObservableObject {
         let newDocRef = db.collection("adjudicator_requests").document()
 
         let data: [String: Any] = [
-            "id": newDocRef.documentID,
-            "userId": userId,
+            "id": newDocRef.documentID, "userId": userId,
             "userEmail": userEmail,
-            "fullName": userName,
-            "experience": self.experience,
-            "certificateUrl": base64String,
-            "status": "PENDING",
+            "fullName": userName, "experience": self.experience,
+            "certificateUrl": base64String, "status": "PENDING",
             "submittedAt": Timestamp(date: Date()),
         ]
 

@@ -3,24 +3,30 @@ import FirebaseAuth
 import FirebaseFirestore
 import Foundation
 import SwiftUI
-import UIKit  // <-- Wajib untuk kompresi dan render UIImage
+import UIKit
 
+/// Handles the business logic for creating and displaying Debate Competitions.
 class CompetitionViewModel: ObservableObject {
+
+    // MARK: - Published Properties (State)
     @Published var activeCompetitions: [CompetitionModel] = []
     @Published var myPendingCompetitions: [CompetitionModel] = []
 
-    // Form Data
+    // MARK: - Published Properties (Form Data)
     @Published var name: String = ""
     @Published var desc: String = ""
     @Published var selectedImageData: Data? = nil
 
-    // Status UI
+    // MARK: - Published Properties (UI Feedback)
     @Published var statusMsg: String? = nil
     @Published var isLoading: Bool = false
     @Published var isUploadSuccess: Bool = false
 
+    // MARK: - Private Properties
     private let db = Firestore.firestore()
 
+    // MARK: - Methods
+    /// Fetches all active competitions and the current user's pending competitions.
     func fetchCompetitions() {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return }
 
@@ -43,11 +49,13 @@ class CompetitionViewModel: ObservableObject {
             }
     }
 
+    /// Helper method to safely map Firestore documents to `CompetitionModel`.
     private func mapToModel(doc: QueryDocumentSnapshot) -> CompetitionModel {
         let data = doc.data()
         return CompetitionModel(
             id: doc.documentID,
             promoterId: data["promoterId"] as? String ?? "",
+            promoterEmail: data["promoterEmail"] as? String ?? "Unknown Email",
             name: data["name"] as? String ?? "",
             description: data["description"] as? String ?? "",
             eventDate: (data["eventDate"] as? Timestamp)?.dateValue() ?? Date(),
@@ -59,9 +67,8 @@ class CompetitionViewModel: ObservableObject {
         )
     }
 
-    // LOGIKA JALAN TIKUS: Bypass Storage dengan Base64
+    /// Processes image data, compresses it to Base64, and uploads the competition record.
     func submitCompetitionData() {
-        // REVISI: Cegah akun tanpa email valid untuk submit
         guard let currentUserId = Auth.auth().currentUser?.uid,
             let userEmail = Auth.auth().currentUser?.email, !userEmail.isEmpty
         else {
@@ -88,11 +95,10 @@ class CompetitionViewModel: ObservableObject {
         }
 
         let base64String = compressedData.base64EncodedString()
-
         let data: [String: Any] = [
             "id": newDocRef.documentID,
             "promoterId": currentUserId,
-            "promoterEmail": userEmail,  // Email asli tersimpan!
+            "promoterEmail": userEmail,
             "name": self.name,
             "description": self.desc,
             "posterUrl": base64String,
@@ -116,6 +122,7 @@ class CompetitionViewModel: ObservableObject {
         }
     }
 
+    /// Clears form fields upon successful submission.
     private func resetForm() {
         self.name = ""
         self.desc = ""

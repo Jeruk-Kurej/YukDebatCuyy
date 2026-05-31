@@ -1,12 +1,23 @@
+//
+//  AdjudicatorDashboardView.swift
+//  YukDebatCuyy
+//
+
 import SwiftUI
 
+/// The central workspace for Adjudicators to review debater case building notes.
 struct AdjudicatorDashboardView: View {
+
+    // MARK: - Properties
+
     @ObservedObject var motionViewModel: MotionArchiveViewModel
     @StateObject private var evalVM = EvaluationViewModel()
     @EnvironmentObject var authVM: AuthViewModel
 
     @State private var selectedNote: CaseBuildingNoteModel? = nil
-    @State private var selectedTab = 0  // 0: Pending, 1: History
+    @State private var selectedTab = 0
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
@@ -14,10 +25,9 @@ struct AdjudicatorDashboardView: View {
                 Color.bgCream.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // SEGMENTED CONTROL HIG STYLE
-                    Picker("Juri Tabs", selection: $selectedTab) {
-                        Text("Butuh Review").tag(0)
-                        Text("History Review").tag(1)
+                    Picker("Adjudicator Tabs", selection: $selectedTab) {
+                        Text("Needs Review").tag(0)
+                        Text("Review History").tag(1)
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal, 20)
@@ -27,7 +37,6 @@ struct AdjudicatorDashboardView: View {
                     ScrollView {
                         LazyVStack(spacing: 16) {
                             if selectedTab == 0 {
-                                // --- TAB 0: PENDING REQUESTS ---
                                 if evalVM.pendingRequests.isEmpty {
                                     VStack(spacing: 16) {
                                         Image(systemName: "checkmark.seal.fill")
@@ -35,11 +44,11 @@ struct AdjudicatorDashboardView: View {
                                             .foregroundStyle(
                                                 .purple.opacity(0.5)
                                             )
-                                        Text("Semua beres!").font(
+                                        Text("All caught up!").font(
                                             .title3.bold()
                                         )
                                         Text(
-                                            "Tidak ada permintaan ulasan dari debater saat ini."
+                                            "No review requests from debaters at the moment."
                                         ).font(.subheadline).foregroundStyle(
                                             .secondary
                                         ).multilineTextAlignment(.center)
@@ -47,26 +56,24 @@ struct AdjudicatorDashboardView: View {
                                     .padding(.top, 80)
                                 } else {
                                     ForEach(evalVM.pendingRequests) { note in
-                                        Button(action: {
-                                            selectedNote = note
-                                        }) {
+                                        Button(action: { selectedNote = note })
+                                        {
                                             AdjudicatorPendingCard(note: note)
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                     }
                                 }
                             } else {
-                                // --- TAB 1: HISTORY REVIEW ---
                                 if evalVM.historyRequests.isEmpty {
                                     VStack(spacing: 16) {
                                         Image(systemName: "clock.fill").font(
                                             .system(size: 60)
                                         ).foregroundStyle(.gray.opacity(0.5))
-                                        Text("Belum ada history.").font(
+                                        Text("No history yet.").font(
                                             .title3.bold()
                                         )
                                         Text(
-                                            "Anda belum memberikan feedback pada catatan manapun."
+                                            "You haven't provided feedback on any notes."
                                         ).font(.subheadline).foregroundStyle(
                                             .secondary
                                         ).multilineTextAlignment(.center)
@@ -74,7 +81,7 @@ struct AdjudicatorDashboardView: View {
                                     .padding(.top, 80)
                                 } else {
                                     ForEach(evalVM.historyRequests) { note in
-                                        AdjudicatorHistoryCard(note: note)  // Read-only card
+                                        AdjudicatorHistoryCard(note: note)
                                     }
                                 }
                             }
@@ -84,11 +91,10 @@ struct AdjudicatorDashboardView: View {
                     }
                 }
             }
-            .navigationTitle("Dashboard Juri")
+            .navigationTitle("Adjudicator Dashboard")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 evalVM.fetchPendingFeedbacks()
-                // Panggil history berdasarkan nama juri yang login
                 if let juriName = authVM.currentUser?.name {
                     evalVM.fetchEvaluationHistory(providerName: juriName)
                 }
@@ -101,4 +107,13 @@ struct AdjudicatorDashboardView: View {
     }
 }
 
-
+// MARK: - Preview
+#Preview {
+    AdjudicatorDashboardView(
+        motionViewModel: MotionArchiveViewModel(
+            apiProxy: MockCloudFunctions(),
+            localCache: LocalCoreDataStorage()
+        )
+    )
+    .environmentObject(AuthViewModel())
+}

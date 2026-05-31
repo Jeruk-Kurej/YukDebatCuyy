@@ -1,16 +1,25 @@
+//
+//  UploadFormCompetition.swift
+//  YukDebatCuyy
+//
+
 import PhotosUI
 import SwiftUI
 import UIKit
 
+/// Form for Promoters to submit a new competition for Admin approval.
 struct UploadFormCompetition: View {
+
+    // MARK: - Properties
+
     @ObservedObject var viewModel: CompetitionViewModel
     @Environment(\.dismiss) var dismiss
-
     @State private var selectedItem: PhotosPickerItem? = nil
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
-            // PERBAIKAN STYLE: Background Cream Khas YukDebat
             ZStack {
                 Color.bgCream.ignoresSafeArea()
 
@@ -70,7 +79,7 @@ struct UploadFormCompetition: View {
                         }
                         .padding(.vertical, 8)
                     }
-                    .listRowBackground(Color.white)  // PERBAIKAN STYLE
+                    .listRowBackground(Color.white)
 
                     Section(
                         header: Text("Competition Details").font(
@@ -85,10 +94,10 @@ struct UploadFormCompetition: View {
                         )
                         .frame(minHeight: 80)
                     }
-                    .listRowBackground(Color.white)  // PERBAIKAN STYLE
+                    .listRowBackground(Color.white)
                 }
-                .scrollContentBackground(.hidden)  // Menghilangkan background abu-abu default
-                .padding(.top, -20)  // PERBAIKAN UX: Menarik form ke atas agar jarak title tidak terlalu jauh
+                .scrollContentBackground(.hidden)
+                .padding(.top, -20)
             }
             .navigationTitle("Add Competition")
             .navigationBarTitleDisplayMode(.inline)
@@ -114,4 +123,9 @@ struct UploadFormCompetition: View {
             }
         }
     }
+}
+
+// MARK: - Preview
+#Preview {
+    UploadFormCompetition(viewModel: CompetitionViewModel())
 }

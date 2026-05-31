@@ -2,14 +2,12 @@
 //  AdjudicatorHistoryCard.swift
 //  YukDebatCuyy
 //
-//  Created by Bryan Carlie Lukito Setiawan on 31/05/26.
-//
 
 import SwiftUI
 
+/// A card for previously reviewed notes.
 struct AdjudicatorHistoryCard: View {
     let note: CaseBuildingNoteModel
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -22,7 +20,7 @@ struct AdjudicatorHistoryCard: View {
                 Spacer()
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.seal.fill")
-                    Text("SUDAH DI-REVIEW")
+                    Text("REVIEWED")
                 }
                 .font(.caption2.bold()).foregroundStyle(Color.btnPositive)
                 .padding(.horizontal, 8).padding(.vertical, 4)
@@ -32,10 +30,9 @@ struct AdjudicatorHistoryCard: View {
                 Color.textCharcoal
             ).lineLimit(2).multilineTextAlignment(.leading)
 
-            // Tampilkan cuplikan feedback yang diberikan Juri
             if let feedback = note.feedbackText {
                 Divider()
-                Text("Feedback Anda:").font(.caption.bold()).foregroundStyle(
+                Text("Your Feedback:").font(.caption.bold()).foregroundStyle(
                     .purple
                 )
                 Text(feedback).font(.subheadline).foregroundStyle(
@@ -43,14 +40,28 @@ struct AdjudicatorHistoryCard: View {
                 ).lineLimit(3).multilineTextAlignment(.leading)
             }
         }
-        .padding(16)
-        .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(16).background(Color.white).clipShape(
+            RoundedRectangle(cornerRadius: 14)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 14).stroke(
                 Color.black.opacity(0.05),
                 lineWidth: 1
             )
-        )
-        .padding(.horizontal, 24)
+        ).padding(.horizontal, 24)
     }
+}
+#Preview {
+    AdjudicatorHistoryCard(
+        note: CaseBuildingNoteModel(
+            id: "1",
+            ownerId: "",
+            motionTitle: "Motion Title",
+            argumentsRichText: "Arguments...",
+            visibility: .publicAccess,
+            isFeedbackRequested: false,
+            updatedAt: Date(),
+            feedbackText: "Good arguments!"
+        )
+    )
 }

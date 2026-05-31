@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// Defines the explicit actions an admin can take during the UI moderation workflow.
 enum AdminAction {
     case approve
     case reject

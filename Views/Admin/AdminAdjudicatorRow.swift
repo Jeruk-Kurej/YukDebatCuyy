@@ -1,12 +1,11 @@
 //
-//  AdminAdjudicatorRow.swift
+//  AdminAdjudicatorHistoryRow.swift
 //  YukDebatCuyy
-//
-//  Created by Bryan Carlie Lukito Setiawan on 30/05/26.
 //
 
 import SwiftUI
 
+/// A read-only row displaying a previously approved adjudicator application.
 struct AdminAdjudicatorRow: View {
     let req: AdjudicatorRequestModel
     let onApprove: () -> Void

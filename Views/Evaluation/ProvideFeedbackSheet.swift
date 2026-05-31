@@ -1,6 +1,15 @@
+//
+//  ProvideFeedbackSheet.swift
+//  YukDebatCuyy
+//
+
 import SwiftUI
 
+/// A bottom sheet form for Adjudicators to write and submit feedback.
 struct ProvideFeedbackSheet: View {
+
+    // MARK: - Properties
+
     let note: CaseBuildingNoteModel
     @ObservedObject var evalVM: EvaluationViewModel
     @Environment(\.dismiss) var dismiss
@@ -8,15 +17,16 @@ struct ProvideFeedbackSheet: View {
 
     @State private var feedbackText = ""
 
+    // MARK: - Body
+
     var body: some View {
         NavigationStack {
-            // PERBAIKAN STYLE: Background Cream
             ZStack {
                 Color.bgCream.ignoresSafeArea()
 
                 Form {
                     Section(
-                        header: Text("Detail Catatan Debater").font(
+                        header: Text("Debater Note Details").font(
                             .caption.bold()
                         )
                     ) {
@@ -26,32 +36,33 @@ struct ProvideFeedbackSheet: View {
                         Text(note.argumentsRichText).font(.body)
                             .foregroundStyle(.secondary).padding(.vertical, 4)
                     }
-                    .listRowBackground(Color.white)  // PERBAIKAN STYLE
+                    .listRowBackground(Color.white)
 
                     Section(
-                        header: Text("Beri Masukan / Feedback (Wajib)").font(
+                        header: Text("Provide Feedback (Required)").font(
                             .caption.bold()
                         )
                     ) {
                         TextEditor(text: $feedbackText)
                             .frame(minHeight: 150)
                     }
-                    .listRowBackground(Color.white)  // PERBAIKAN STYLE
+                    .listRowBackground(Color.white)
                 }
                 .scrollContentBackground(.hidden)
-                .padding(.top, -20)  // PERBAIKAN UX: Mengurangi jarak kosong
+                .padding(.top, -20)
             }
-            .navigationTitle("Evaluasi Catatan")
+            .navigationTitle("Evaluate Note")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { dismiss() }.foregroundStyle(
+                    Button("Cancel") { dismiss() }.foregroundStyle(
                         Color.btnNegative
                     )
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Kirim") {
-                        let juriName = authVM.currentUser?.name ?? "Juri Anonim"
+                    Button("Submit") {
+                        let juriName =
+                            authVM.currentUser?.name ?? "Anonymous Adjudicator"
                         evalVM.submitFeedback(
                             noteId: note.id,
                             feedbackText: feedbackText,
@@ -74,4 +85,21 @@ struct ProvideFeedbackSheet: View {
             }
         }
     }
+}
+
+// MARK: - Preview
+#Preview {
+    ProvideFeedbackSheet(
+        note: CaseBuildingNoteModel(
+            id: "1",
+            ownerId: "u1",
+            motionTitle: "Motion Sample",
+            argumentsRichText: "Arguments here...",
+            visibility: .publicAccess,
+            isFeedbackRequested: true,
+            updatedAt: Date()
+        ),
+        evalVM: EvaluationViewModel()
+    )
+    .environmentObject(AuthViewModel())
 }

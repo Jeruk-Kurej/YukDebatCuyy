@@ -7,7 +7,9 @@
 
 import Foundation
 
+/// Represents the current life-cycle state of a sparring room.
 enum RoomState: String, Codable {
+    case waiting = "WAITING" // PERBAIKAN BUG: Menambahkan status menunggu jadwal
     case preparing = "PREPARING"
     case ongoing = "ONGOING"
     case done = "DONE"

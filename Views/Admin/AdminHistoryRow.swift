@@ -2,14 +2,12 @@
 //  AdminHistoryRow.swift
 //  YukDebatCuyy
 //
-//  Created by Bryan Carlie Lukito Setiawan on 30/05/26.
-//
 
 import SwiftUI
 
+/// A read-only row displaying a previously approved competition.
 struct AdminHistoryRow: View {
     let comp: CompetitionModel
-
     var body: some View {
         HStack(spacing: 16) {
             Group {
@@ -33,7 +31,6 @@ struct AdminHistoryRow: View {
                 RoundedRectangle(cornerRadius: 8)
             )
 
-            // INFO
             VStack(alignment: .leading, spacing: 4) {
                 Text(comp.name).font(.headline).foregroundStyle(
                     Color.textCharcoal
@@ -42,10 +39,8 @@ struct AdminHistoryRow: View {
                     .foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
-
-            // STATUS BADGE
-            Image(systemName: "checkmark.seal.fill")
-                .font(.title2).foregroundStyle(Color.btnPositive)
+            Image(systemName: "checkmark.seal.fill").font(.title2)
+                .foregroundStyle(Color.btnPositive)
         }
         .padding(16).background(Color.white).clipShape(
             RoundedRectangle(cornerRadius: 12)
@@ -58,4 +53,18 @@ struct AdminHistoryRow: View {
         )
         .padding(.horizontal, 20)
     }
+}
+#Preview {
+    AdminHistoryRow(
+        comp: CompetitionModel(
+            id: "1",
+            promoterId: "u1",
+            name: "Test Comp",
+            description: "",
+            eventDate: Date(),
+            registrationUrl: "",
+            posterStorageUrl: "",
+            status: .active
+        )
+    )
 }

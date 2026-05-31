@@ -10,6 +10,7 @@ import Foundation
 /// Encapsulates all details regarding a debate competition uploaded by a Promoter.
 /// Includes the ReviewStatus to support the Admin moderation workflow before going public.
 struct CompetitionModel: Codable, Identifiable {
+    // MARK: - Properties
     let id: String
     let promoterId: String
     var promoterEmail: String?

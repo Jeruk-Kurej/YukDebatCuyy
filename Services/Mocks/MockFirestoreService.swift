@@ -9,6 +9,7 @@ import Foundation
 
 /// Mock implementation of Firestore database operations for offline prototyping.
 class MockFirestoreService: FirestoreServiceProtocol {
+    // MARK: - Methods
     func saveDocument(collection: String, documentId: String, data: [String: Any]) async throws {
         print("Mock: Saved document to \(collection)")
     }

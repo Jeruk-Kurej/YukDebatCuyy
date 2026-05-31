@@ -2,223 +2,150 @@
 //  SparringRoomCard.swift
 //  YukDebatCuyy
 //
-//  Created by Bryan Carlie Lukito Setiawan on 27/05/26.
-//
 
 import SwiftUI
 
+/// Represents a visually distinct card displaying details of an individual sparring room.
 struct SparringRoomCard: View {
+
+    // MARK: - Properties
+
     let room: SparringRoomModel
     @ObservedObject var viewModel: SparringViewModel
 
-    // State khusus untuk menahan aksi accidental (Revisi 1 & 7)
-    @State private var showLeaveAlert = false
-    @State private var showStartAlert = false
+    // MARK: - Body
 
     var body: some View {
-        let isHost = viewModel.isUserHost(room: room)
-        let isJoined = viewModel.isUserInRoom(room: room)
-        let isPending = viewModel.isUserPending(room: room)
+        VStack(alignment: .leading, spacing: 12) {
+            // Header Section
+            HStack {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(
+                            room.state == .ongoing
+                                ? Color.red : Color.btnPositive
+                        )
+                        .frame(width: 8, height: 8)
 
-        VStack(alignment: .leading, spacing: 0) {  // Spacing 0 agar pita warna menempel di atas
+                    Text(room.state.rawValue)
+                        .font(.caption2.bold())
+                        .foregroundStyle(Color.textCharcoal)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.gray.opacity(0.1))
+                .clipShape(Capsule())
 
-            // REVISI 3: Pita warna di atas kartu untuk membedakan Privasi secara cepat
-            Rectangle()
-                .fill(
-                    room.accessType == .privateAccess
-                        ? Color.btnNegative : Color.btnPositive
+                Spacer()
+
+                Text(
+                    room.scheduledTime.formatted(
+                        date: .abbreviated,
+                        time: .shortened
+                    )
                 )
-                .frame(height: 6)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
 
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 8) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "building.columns.fill")
-                        Text(room.motionCategory.uppercased())
+            // Content Section
+            VStack(alignment: .leading, spacing: 4) {
+                Text(room.motionCategory)
+                    .font(.headline)
+                    .foregroundStyle(Color.textCharcoal)
+
+                Text(room.specialNotes)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            Divider()
+
+            // Footer Section
+            HStack {
+                HStack(spacing: -8) {
+                    ForEach(0..<min(room.participants.count, 3), id: \.self) {
+                        _ in
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 24, height: 24)
+                            .overlay(Circle().stroke(Color.white, lineWidth: 2))
                     }
-                    .font(.system(size: 11, weight: .bold)).foregroundStyle(
-                        Color.accentWalnut
-                    ).padding(8).background(Color.accentWalnut.opacity(0.08))
-                    .clipShape(Capsule())
 
-                    HStack(spacing: 4) {
-                        Image(
-                            systemName: room.accessType == .privateAccess
-                                ? "lock.fill" : "globe"
-                        )
-                        Text(
-                            room.accessType == .privateAccess
-                                ? "PRIVAT" : "PUBLIK"
-                        )
+                    if room.participants.count > 3 {
+                        Circle()
+                            .fill(Color.accentWalnut)
+                            .frame(width: 24, height: 24)
+                            .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                            .overlay(
+                                Text("+\(room.participants.count - 3)")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.white)
+                            )
                     }
-                    .font(.system(size: 10, weight: .black)).foregroundStyle(
-                        room.accessType == .privateAccess
-                            ? Color.btnNegative : Color.btnPositive
-                    ).padding(8).background(
-                        room.accessType == .privateAccess
-                            ? Color.btnNegative.opacity(0.08)
-                            : Color.btnPositive.opacity(0.08)
-                    ).clipShape(RoundedRectangle(cornerRadius: 6))
-
-                    Spacer()
-                    // REVISI 2: Slot selalu ditampilkan meskipun user sudah bergabung
-                    Text(
-                        room.state == .ongoing
-                            ? "• BERLANGSUNG"
-                            : "\(room.participants.count)/8 Slot"
-                    )
-                    .font(.system(size: 11, weight: .bold))
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(isHost ? "Anda (Host)" : "Host: \(room.hostId)").font(
-                        .system(.title3, design: .serif, weight: .bold)
-                    )
-                    HStack(spacing: 6) {
-                        Image(systemName: "calendar.badge.clock")
-                        Text(
-                            room.scheduledTime.formatted(
-                                date: .abbreviated,
-                                time: .shortened
-                            )
-                        )
-                    }.font(.subheadline.bold()).foregroundStyle(
-                        Color.btnPositive
-                    )
-                }
+                Text("\(room.participants.count)/8 Joined")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 8)
 
-                if room.state == .ongoing {
-                    Link(
-                        "Masuk Ruang Virtual",
-                        destination: URL(string: room.meetingLink) ?? URL(
-                            string: "https://zoom.us"
-                        )!
-                    ).font(.subheadline.bold()).foregroundStyle(.white).frame(
-                        maxWidth: .infinity
-                    ).padding(12).background(Color.btnPositive).clipShape(
-                        RoundedRectangle(cornerRadius: 11)
-                    )
-                } else if isHost {
-                    // REVISI 7: Warning jika slot kurang dari 2
-                    Button("Mulai Sesi Sparring") {
-                        if room.participants.count < 2 {
-                            showStartAlert = true
-                        } else {
-                            viewModel.triggerStart(roomId: room.id)
-                        }
-                    }
-                    .font(.subheadline.bold()).foregroundStyle(.white).frame(
-                        maxWidth: .infinity
-                    ).padding(12).background(Color.btnPositive).clipShape(
-                        RoundedRectangle(cornerRadius: 11)
-                    )
-                    .alert("Peserta Masih Kosong", isPresented: $showStartAlert)
-                    {
-                        Button("Tunggu Dulu", role: .cancel) {}
-                        Button("Tetap Mulai", role: .destructive) {
-                            viewModel.triggerStart(roomId: room.id)
-                        }
-                    } message: {
-                        Text(
-                            "Belum ada peserta yang bergabung. Yakin ingin memulai sesi sekarang?"
-                        )
-                    }
+                Spacer()
 
-                } else if isJoined {
-                    HStack(spacing: 12) {
-                        Text("Sudah Bergabung").font(.subheadline.bold())
-                            .foregroundStyle(Color.btnPositive).frame(
-                                maxWidth: .infinity
-                            ).padding(12).background(
-                                Color.btnPositive.opacity(0.1)
-                            ).clipShape(RoundedRectangle(cornerRadius: 11))
-
-                        // REVISI 1: Tombol merah icon keluar + Alert Konfirmasi
-                        Button(action: { showLeaveAlert = true }) {
-                            Image(
-                                systemName: "rectangle.portrait.and.arrow.right"
-                            )
-                            .font(.headline).foregroundStyle(.white).padding(12)
-                            .background(Color.btnNegative).clipShape(
-                                RoundedRectangle(cornerRadius: 11)
-                            )
-                        }
-                        .alert("Keluar Ruangan", isPresented: $showLeaveAlert) {
-                            Button("Batal", role: .cancel) {}
-                            Button("Keluar", role: .destructive) {
-                                viewModel.leaveRoom(roomId: room.id)
-                            }
-                        } message: {
-                            Text(
-                                "Apakah Anda yakin ingin membatalkan pendaftaran dan keluar dari ruang sparring ini?"
-                            )
-                        }
-                    }
-                } else if isPending {
-                    Text("Menunggu Persetujuan Host...").font(
-                        .subheadline.bold()
-                    ).foregroundStyle(Color.accentWalnut).frame(
-                        maxWidth: .infinity
-                    ).padding(12).background(Color.accentWalnut.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 11))
+                if viewModel.isUserInRoom(room: room) {
+                    Text("Joined")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Color.btnPositive)
+                } else if viewModel.isUserPending(room: room) {
+                    Text("Pending")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.orange)
                 } else {
-                    HStack(spacing: 12) {
-                        Button("Join as Solo") {
-                            viewModel.requestJoin(
-                                roomId: room.id,
-                                role: .openingGovt,
-                                isTeam: false
-                            )
-                        }.font(.subheadline.bold()).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity).padding(12).background(
-                                Color.btnNeutral
-                            ).clipShape(RoundedRectangle(cornerRadius: 11))
-                        Button("Join as Team") {
-                            viewModel.requestJoin(
-                                roomId: room.id,
-                                role: .openingGovt,
-                                isTeam: true
-                            )
-                        }.font(.subheadline.bold()).foregroundStyle(
-                            Color.btnNeutral
-                        ).frame(maxWidth: .infinity).padding(12).background(
-                            Color.white
-                        ).clipShape(RoundedRectangle(cornerRadius: 11)).overlay(
-                            RoundedRectangle(cornerRadius: 11).stroke(
-                                Color.btnNeutral,
-                                lineWidth: 1
-                            )
+                    Button("Join") {
+                        viewModel.requestJoin(
+                            roomId: room.id,
+                            role: .openingGovt,
+                            isTeam: false
                         )
                     }
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.btnPositive)
+                    .clipShape(Capsule())
                 }
             }
-            .padding(20)
         }
+        .padding(16)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
-            RoundedRectangle(cornerRadius: 18).stroke(
-                Color.black.opacity(0.04),
+            RoundedRectangle(cornerRadius: 16).stroke(
+                Color.black.opacity(0.05),
                 lineWidth: 1
             )
         )
-        .shadow(color: Color.black.opacity(0.03), radius: 5, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(0.04), radius: 10, y: 5)
     }
 }
+
+// MARK: - Preview
 
 #Preview {
     SparringRoomCard(
         room: SparringRoomModel(
-            id: "1",
-            hostId: "Mario",
-            scheduledTime: Date(),
-            motionCategory: "Pendidikan",
-            specialNotes: "Latihan",
-            needAdjudicator: true,
-            meetingLink: "",
+            id: "room_public_1",
+            hostId: "user_mario_123",
+            scheduledTime: Date().addingTimeInterval(7200),
+            motionCategory: "Education",
+            specialNotes: "Standard BP practice.",
+            meetingLink: "https://zoom.us/j/dummy",
             accessType: .publicAccess,
             state: .preparing,
-            participants: []
+            participants: [],
+            isAdjudicatorNeeded: true
         ),
         viewModel: SparringViewModel(dbService: MockFirestoreService())
     )

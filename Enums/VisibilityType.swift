@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// Defines the access control level for notes, sparring rooms, or user-generated content.
 enum VisibilityType: String, Codable {
     case publicAccess = "PUBLIC"
     case privateAccess = "PRIVATE"

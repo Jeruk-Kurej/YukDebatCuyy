@@ -3,21 +3,26 @@ import FirebaseAuth
 import FirebaseFirestore
 import Foundation
 
+/// Manages authentication states, user registration, and role-based access checks.
 class AuthViewModel: ObservableObject {
+
+    // MARK: - Published Properties
     @Published var userSession: FirebaseAuth.User?
     @Published var currentUser: UserModel?
-
-    @Published var isLoading = false
+    @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
+    // MARK: - Private Properties
     private let db = Firestore.firestore()
 
+    // MARK: - Initialization
     init() {
         self.userSession = Auth.auth().currentUser
         fetchUserRole()
     }
 
-    // MARK: - Register
+    // MARK: - Methods
+    /// Registers a new user and creates their secure document in Firestore.
     func register(email: String, password: String, fullName: String) {
         isLoading = true
         errorMessage = nil
@@ -36,7 +41,6 @@ class AuthViewModel: ObservableObject {
 
             guard let user = result?.user else { return }
 
-            // PERBAIKAN 1: Menyesuaikan dengan parameter UserModel di dokumenmu
             let newUser = UserModel(
                 id: user.uid,
                 name: fullName,
@@ -46,13 +50,9 @@ class AuthViewModel: ObservableObject {
                 createdAt: Date()
             )
 
-            // PERBAIKAN 2: Simpan manual pakai Dictionary (TANPA FirebaseFirestoreSwift)
             let userData: [String: Any] = [
-                "id": newUser.id,
-                "name": newUser.name,
-                "email": newUser.email,
-                "role": "DEBATER",
-                "isActive": newUser.isActive,
+                "id": newUser.id, "name": newUser.name, "email": newUser.email,
+                "role": "DEBATER", "isActive": newUser.isActive,
                 "createdAt": Timestamp(date: newUser.createdAt),
             ]
 
@@ -74,7 +74,7 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Login
+    /// Authenticates a user and retrieves their active roles.
     func login(email: String, password: String) {
         isLoading = true
         errorMessage = nil
@@ -96,7 +96,7 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Logout
+    /// Signs the user out from Firebase Session securely.
     func logout() {
         do {
             try Auth.auth().signOut()
@@ -107,14 +107,13 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Fetch Role & Data (Mapping Manual)
+    /// Listens for real-time changes to the user's role (e.g., when approved as an Adjudicator).
     func fetchUserRole() {
         guard let uid = userSession?.uid else {
             DispatchQueue.main.async { self.isLoading = false }
             return
         }
 
-        // PENTING: Gunakan addSnapshotListener agar perubahan Role real-time!
         db.collection("users").document(uid).addSnapshotListener {
             [weak self] snapshot, error in
             DispatchQueue.main.async {

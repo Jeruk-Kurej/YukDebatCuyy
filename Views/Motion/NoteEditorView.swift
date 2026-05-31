@@ -1,30 +1,38 @@
+//
+//  NoteEditorView.swift
+//  YukDebatCuyy
+//
+
 import SwiftUI
 
+/// A form for creating or editing case building notes.
 struct NoteEditorView: View {
+
+    // MARK: - Properties
+
     @ObservedObject var viewModel: MotionArchiveViewModel
     @State var draftNote: CaseBuildingNoteModel
+
     var isNewNote: Bool = false
     @Environment(\.dismiss) var dismiss
 
+    // MARK: - Body
+
     var body: some View {
-        // PERBAIKAN STYLE: Dibungkus ZStack agar lebih aman menutupi Safe Area
         ZStack {
             Color.bgCream.ignoresSafeArea()
 
             Form {
-                Section(header: Text("Detail Mosi Lomba").font(.caption.bold()))
-                {
+                Section(header: Text("Motion Details").font(.caption.bold())) {
                     TextField(
-                        "Judul Mosi *",
+                        "Motion Title *",
                         text: $draftNote.motionTitle,
                         axis: .vertical
                     )
                     .font(.system(.body, design: .serif, weight: .medium))
 
-                    Picker(
-                        "Visibilitas Catatan",
-                        selection: $draftNote.visibility
-                    ) {
+                    Picker("Note Visibility", selection: $draftNote.visibility)
+                    {
                         Text("Private").tag(VisibilityType.privateAccess)
                         Text("Public").tag(VisibilityType.publicAccess)
                     }
@@ -33,8 +41,9 @@ struct NoteEditorView: View {
                 .listRowBackground(Color.white)
 
                 Section(
-                    header: Text("Struktur Konstruksi Kasus (Case Building)")
-                        .font(.caption.bold())
+                    header: Text("Case Building Structure").font(
+                        .caption.bold()
+                    )
                 ) {
                     TextEditor(text: $draftNote.argumentsRichText)
                         .frame(minHeight: 280)
@@ -43,16 +52,19 @@ struct NoteEditorView: View {
                 .listRowBackground(Color.white)
             }
             .scrollContentBackground(.hidden)
-            .padding(.top, -20)  // PERBAIKAN UX: Mengurangi jarak kosong
+            .padding(.top, -20)
         }
-        .navigationTitle(isNewNote ? "Tambah Catatan" : "Edit Catatan")
+        .navigationTitle(isNewNote ? "Add Note" : "Edit Note")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Batal") { dismiss() }.foregroundStyle(Color.btnNegative)
+                Button("Cancel") {
+                    dismiss()
+                }
+                .foregroundStyle(Color.btnNegative)
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Simpan") {
+                Button("Save") {
                     draftNote.updatedAt = Date()
                     viewModel.saveNote(draftNote)
                     dismiss()
@@ -65,5 +77,28 @@ struct NoteEditorView: View {
                 .disabled(draftNote.motionTitle.isEmpty)
             }
         }
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    NavigationStack {
+        NoteEditorView(
+            viewModel: MotionArchiveViewModel(
+                apiProxy: MockCloudFunctions(),
+                localCache: LocalCoreDataStorage()
+            ),
+            draftNote: CaseBuildingNoteModel(
+                id: "1",
+                ownerId: "user_1",
+                motionTitle: "",
+                argumentsRichText: "",
+                visibility: .publicAccess,
+                isFeedbackRequested: false,
+                updatedAt: Date()
+            ),
+            isNewNote: true
+        )
     }
 }

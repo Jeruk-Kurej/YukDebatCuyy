@@ -9,6 +9,7 @@ import Foundation
 
 /// Sandboxed simulation of thread-safe local file persistence operations.
 class LocalCoreDataStorage: CoreDataStorageProtocol {
+    // MARK: - Methods
     func saveLocalDraft(noteId: String, title: String, content: String) async throws {
         print("Mock CoreData: Draft \(noteId) autosaved locally.")
     }

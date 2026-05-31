@@ -9,6 +9,7 @@ import Foundation
 
 /// Defines the contract for cloud database operations.
 protocol FirestoreServiceProtocol {
+    // MARK: - Methods
     func saveDocument(collection: String, documentId: String, data: [String: Any]) async throws
     func updateTransactional(collection: String, documentId: String, data: [String: Any]) async throws
     func deleteDocument(collection: String, documentId: String) async throws

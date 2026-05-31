@@ -2,13 +2,17 @@
 //  NoteCard.swift
 //  YukDebatCuyy
 //
-//  Created by Bryan Carlie Lukito Setiawan on 31/05/26.
-//
 
 import SwiftUI
 
+/// A subcomponent representing a single case building note visually.
 struct NoteCard: View {
+
+    // MARK: - Properties
+
     let note: CaseBuildingNoteModel
+
+    // MARK: - Body
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -18,14 +22,17 @@ struct NoteCard: View {
                         systemName: note.visibility == .publicAccess
                             ? "globe" : "lock.fill"
                     )
-                    Text(note.visibility == .publicAccess ? "PUBLIK" : "PRIVAT")
+                    Text(
+                        note.visibility == .publicAccess ? "PUBLIC" : "PRIVATE"
+                    )
                 }
                 .font(.caption.bold())
                 .foregroundStyle(
                     note.visibility == .publicAccess
                         ? Color.btnPositive : Color.btnNegative
                 )
-                .padding(.horizontal, 8).padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
                 .background(
                     note.visibility == .publicAccess
                         ? Color.btnPositive.opacity(0.1)
@@ -57,4 +64,22 @@ struct NoteCard: View {
         )
         .shadow(color: Color.black.opacity(0.03), radius: 8, y: 4)
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    NoteCard(
+        note: CaseBuildingNoteModel(
+            id: "1",
+            ownerId: "user_1",
+            motionTitle: "This house would ban artificial intelligence",
+            argumentsRichText: "Content...",
+            visibility: .publicAccess,
+            isFeedbackRequested: false,
+            updatedAt: Date()
+        )
+    )
+    .padding()
+    .background(Color.bgCream)
 }

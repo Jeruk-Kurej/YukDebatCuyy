@@ -1,21 +1,33 @@
+//
+//  ExploreMotionListView.swift
+//  YukDebatCuyy
+//
+
 import SwiftUI
 
+/// Displays a list of random or searchable debate motions.
+/// Allows Debaters to generate new motions or save them into their personal case building notes.
 struct ExploreMotionListView: View {
+
+    // MARK: - Properties
+
     @ObservedObject var viewModel: MotionArchiveViewModel
     @EnvironmentObject var authVM: AuthViewModel
 
+    // MARK: - Body
+
     var body: some View {
         ScrollView(showsIndicators: false) {
-
-            // TOMBOL GENERATE
             Button(action: { viewModel.triggerFetchMotion() }) {
                 HStack(spacing: 8) {
                     if viewModel.isGenerating {
                         ProgressView().tint(.white)
-                        Text("Mencari Mosi...").font(.subheadline.bold())
+                        Text("Searching Motion...")
+                            .font(.subheadline.bold())
                     } else {
                         Image(systemName: "sparkles")
-                        Text("Generate Random Motion").font(.subheadline.bold())
+                        Text("Generate Random Motion")
+                            .font(.subheadline.bold())
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -35,7 +47,6 @@ struct ExploreMotionListView: View {
             .padding([.horizontal, .top])
             .disabled(viewModel.isGenerating)
 
-            // LIST MOSI
             LazyVStack(spacing: 12) {
                 ForEach(viewModel.filteredMotions) { motion in
                     let isSaved =
@@ -48,12 +59,12 @@ struct ExploreMotionListView: View {
                         HStack {
                             HStack {
                                 Image(systemName: "tag.fill").font(.caption)
-                                Text(motion.category.uppercased()).font(
-                                    .system(size: 10, weight: .black)
-                                )
+                                Text(motion.category.uppercased())
+                                    .font(.system(size: 10, weight: .black))
                             }
                             .foregroundStyle(Color.accentWalnut)
-                            .padding(.horizontal, 8).padding(.vertical, 4)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
                             .background(Color.accentWalnut.opacity(0.08))
                             .clipShape(Capsule())
 
@@ -82,8 +93,7 @@ struct ExploreMotionListView: View {
                                     )
                                     Text(
                                         isSaved
-                                            ? "Tersimpan di Catatan"
-                                            : "Simpan ke Catatan"
+                                            ? "Saved to Notes" : "Save to Notes"
                                     )
                                 }
                                 .font(.subheadline.bold())
@@ -120,11 +130,23 @@ struct ExploreMotionListView: View {
                 value: viewModel.filteredMotions
             )
         }
-        // PERBAIKAN BUG: Ambil data "myNotes" secara langsung saat layar Explore ini terbuka
         .onAppear {
             if let userId = authVM.currentUser?.id {
                 viewModel.fetchMyNotes(userId: userId)
             }
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    ExploreMotionListView(
+        viewModel: MotionArchiveViewModel(
+            apiProxy: MockCloudFunctions(),
+            localCache: LocalCoreDataStorage()
+        )
+    )
+    .environmentObject(AuthViewModel())
+    .background(Color.bgCream)
 }

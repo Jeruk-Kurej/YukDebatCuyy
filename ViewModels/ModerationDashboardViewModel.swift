@@ -2,21 +2,25 @@ import Combine
 import FirebaseFirestore
 import Foundation
 
+/// Provides comprehensive data aggregation for the Admin Moderation Dashboard.
+/// Handles approvals and rejections for Competitions and Adjudicator Requests.
 class ModerationDashboardViewModel: ObservableObject {
+
+    // MARK: - Published Properties
     @Published var pendingList: [CompetitionModel] = []
     @Published var approvedList: [CompetitionModel] = []
-
     @Published var pendingAdjudicators: [AdjudicatorRequestModel] = []
-    // TAMBAHAN: State penampung history Juri
     @Published var approvedAdjudicators: [AdjudicatorRequestModel] = []
 
+    // MARK: - Private Properties
     private let db = Firestore.firestore()
 
+    // MARK: - Methods
+    /// Subscribes to all pending and approved moderation entities.
     func fetchAllModeration() {
-        // 1. TARIK DATA KOMPETISI
+        // Fetch Competitions
         db.collection("competitions").addSnapshotListener { snapshot, _ in
             guard let docs = snapshot?.documents else { return }
-
             var tempPending: [CompetitionModel] = []
             var tempApproved: [CompetitionModel] = []
 
@@ -44,17 +48,15 @@ class ModerationDashboardViewModel: ObservableObject {
                     tempApproved.append(model)
                 }
             }
-
             self.pendingList = tempPending
             self.approvedList = tempApproved
         }
 
-        // 2. TARIK DATA PENGAJUAN JURI (SUDAH DIPERBAIKI)
+        // Fetch Adjudicator Requests
         db.collection("adjudicator_requests").addSnapshotListener {
             snapshot,
             _ in
             guard let docs = snapshot?.documents else { return }
-
             var tempPendingAdj: [AdjudicatorRequestModel] = []
             var tempApprovedAdj: [AdjudicatorRequestModel] = []
 
@@ -80,21 +82,21 @@ class ModerationDashboardViewModel: ObservableObject {
                     tempApprovedAdj.append(model)
                 }
             }
-
             self.pendingAdjudicators = tempPendingAdj
             self.approvedAdjudicators = tempApprovedAdj
         }
     }
 
+    /// Updates the visibility status of a competition.
     func updateStatus(compId: String, to status: String) {
         db.collection("competitions").document(compId).updateData([
             "status": status
         ])
     }
 
+    /// Grants adjudicator privileges to a user securely via Firestore Batch writes.
     func approveAdjudicator(reqId: String, userId: String) {
         let batch = db.batch()
-
         let reqRef = db.collection("adjudicator_requests").document(reqId)
         batch.updateData(["status": "ACTIVE"], forDocument: reqRef)
 

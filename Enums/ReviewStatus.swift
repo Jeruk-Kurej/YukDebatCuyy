@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// Represents the moderation status of user-submitted content or adjudicator requests.
 enum ReviewStatus: String, Codable {
     case pending = "PENDING"
     case active = "ACTIVE"

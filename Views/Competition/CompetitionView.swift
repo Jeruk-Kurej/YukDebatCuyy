@@ -1,8 +1,19 @@
+//
+//  CompetitionView.swift
+//  YukDebatCuyy
+//
+
 import SwiftUI
 
+/// The main feed for browsing active competitions and viewing pending submissions.
 struct CompetitionView: View {
+
+    // MARK: - Properties
+
     @StateObject private var viewModel = CompetitionViewModel()
     @State private var showUploadForm = false
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
@@ -11,7 +22,6 @@ struct CompetitionView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
-                        // 1. LIST PENDING
                         if !viewModel.myPendingCompetitions.isEmpty {
                             VStack(alignment: .leading) {
                                 Text("Pending Admin Approval")
@@ -26,7 +36,6 @@ struct CompetitionView: View {
                             }
                         }
 
-                        // 2. LIST ACTIVE
                         VStack(alignment: .leading) {
                             Text(
                                 viewModel.activeCompetitions.isEmpty
@@ -42,11 +51,10 @@ struct CompetitionView: View {
                             }
                         }
                     }
-                    .padding(.top, 16)
-                    .padding(.bottom, 120)
+                    .padding(.top, 8)
+                    .padding(.bottom, 100)
                 }
 
-                // TOMBOL UPLOAD FLOATING
                 Button(action: { showUploadForm = true }) {
                     Image(systemName: "plus")
                         .font(.title2.bold())
@@ -54,17 +62,18 @@ struct CompetitionView: View {
                         .frame(width: 60, height: 60)
                         .background(Color.btnPositive)
                         .clipShape(Circle())
-                        // PERBAIKAN STYLE: Shadow konsisten dan elegan
-                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                        .shadow(
+                            color: Color.black.opacity(0.15),
+                            radius: 8,
+                            x: 0,
+                            y: 4
+                        )
                 }
-                // PERBAIKAN PLACEMENT: Konsisten di semua page
                 .padding(.trailing, 24)
                 .padding(.bottom, 110)
             }
             .navigationTitle("Competitions")
-            .onAppear {
-                viewModel.fetchCompetitions()
-            }
+            .onAppear { viewModel.fetchCompetitions() }
             .sheet(isPresented: $showUploadForm) {
                 UploadFormCompetition(viewModel: viewModel)
             }
@@ -75,4 +84,9 @@ struct CompetitionView: View {
             )
         }
     }
+}
+
+// MARK: - Preview
+#Preview {
+    CompetitionView()
 }

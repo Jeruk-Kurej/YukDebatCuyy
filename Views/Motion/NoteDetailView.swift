@@ -1,23 +1,36 @@
+//
+//  NoteDetailView.swift
+//  YukDebatCuyy
+//
+
 import SwiftUI
 
+/// Provides a read-only view of a specific case building note.
+/// Allows the user to request feedback from adjudicators or read provided feedback.
 struct NoteDetailView: View {
+
+    // MARK: - Properties
+
     @ObservedObject var viewModel: MotionArchiveViewModel
     let note: CaseBuildingNoteModel
 
     @State private var showingEditSheet = false
 
+    // MARK: - Computed Properties
+
     var latestNote: CaseBuildingNoteModel {
         viewModel.myNotes.first { $0.id == note.id } ?? note
     }
 
+    // MARK: - Body
+
     var body: some View {
-        // PERBAIKAN: Bungkus dengan ZStack agar background Cream khas YukDebat teraplikasikan
         ZStack {
             Color.bgCream.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Header
+                    // Header Section
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Image(
@@ -26,7 +39,7 @@ struct NoteDetailView: View {
                             )
                             Text(
                                 latestNote.visibility == .publicAccess
-                                    ? "Akses Publik" : "Akses Privat"
+                                    ? "Public Access" : "Private Access"
                             )
                         }
                         .font(.caption.bold())
@@ -34,7 +47,8 @@ struct NoteDetailView: View {
                             latestNote.visibility == .publicAccess
                                 ? Color.btnPositive : Color.btnNegative
                         )
-                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
                         .background(
                             latestNote.visibility == .publicAccess
                                 ? Color.btnPositive.opacity(0.1)
@@ -42,29 +56,35 @@ struct NoteDetailView: View {
                         )
                         .clipShape(Capsule())
 
-                        Text(latestNote.motionTitle).font(.title2.bold())
-                            .foregroundStyle(Color.textCharcoal).padding(
-                                .top,
-                                4
-                            )
+                        Text(latestNote.motionTitle)
+                            .font(.title2.bold())
+                            .foregroundStyle(Color.textCharcoal)
+                            .padding(.top, 4)
+
                         Text(
-                            "Terakhir diubah: \(latestNote.updatedAt.formatted(date: .abbreviated, time: .shortened))"
+                            "Last modified: \(latestNote.updatedAt.formatted(date: .abbreviated, time: .shortened))"
                         )
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
 
                     Divider()
 
-                    // Konten Catatan
+                    // Content Section
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Catatan Case Building").font(.headline)
+                        Text("Case Building Note")
+                            .font(.headline)
                             .foregroundStyle(Color.accentWalnut)
+
                         if latestNote.argumentsRichText.isEmpty {
-                            Text("Belum ada argumen atau catatan yang ditulis.")
-                                .font(.body).foregroundStyle(.gray.opacity(0.8))
-                                .italic().padding(.top, 8)
+                            Text("No arguments or notes written yet.")
+                                .font(.body)
+                                .foregroundStyle(.gray.opacity(0.8))
+                                .italic()
+                                .padding(.top, 8)
                         } else {
-                            Text(latestNote.argumentsRichText).font(.body)
+                            Text(latestNote.argumentsRichText)
+                                .font(.body)
                                 .foregroundStyle(Color.textCharcoal)
                                 .lineSpacing(4)
                         }
@@ -72,20 +92,22 @@ struct NoteDetailView: View {
 
                     Divider().padding(.vertical, 8)
 
-                    // AREA FEEDBACK & TOMBOL REQUEST
+                    // Feedback Section
                     if let feedback = latestNote.feedbackText, !feedback.isEmpty
                     {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Image(systemName: "star.bubble.fill")
                                 Text(
-                                    "Feedback dari Juri: \(latestNote.feedbackProviderName ?? "Juri")"
+                                    "Feedback from Adjudicator: \(latestNote.feedbackProviderName ?? "Adjudicator")"
                                 )
                             }
-                            .font(.headline).foregroundStyle(.purple)
+                            .font(.headline)
+                            .foregroundStyle(.purple)
 
                             Text(feedback)
-                                .font(.body).foregroundStyle(Color.textCharcoal)
+                                .font(.body)
+                                .foregroundStyle(Color.textCharcoal)
                                 .padding()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(Color.purple.opacity(0.1))
@@ -110,13 +132,14 @@ struct NoteDetailView: View {
                                 )
                                 Text(
                                     latestNote.isFeedbackRequested
-                                        ? "Menunggu Feedback Juri..."
-                                        : "Minta Feedback Juri"
+                                        ? "Waiting for Adjudicator Feedback..."
+                                        : "Request Adjudicator Feedback"
                                 )
                             }
-                            .font(.headline).foregroundStyle(.white).frame(
-                                maxWidth: .infinity
-                            ).padding()
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
                             .background(
                                 latestNote.isFeedbackRequested
                                     ? Color.gray : Color.purple
@@ -131,12 +154,11 @@ struct NoteDetailView: View {
                 .padding(24)
             }
         }
-        .navigationTitle("Detail Catatan")
+        .navigationTitle("Note Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingEditSheet = true }) {
-                    // PERBAIKAN HIG: Hapus icon pencil, sisakan teks saja agar lebih native iOS
                     Text("Edit")
                         .fontWeight(.bold)
                         .foregroundStyle(Color.btnPositive)
@@ -152,5 +174,27 @@ struct NoteDetailView: View {
                 )
             }
         }
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    NavigationStack {
+        NoteDetailView(
+            viewModel: MotionArchiveViewModel(
+                apiProxy: MockCloudFunctions(),
+                localCache: LocalCoreDataStorage()
+            ),
+            note: CaseBuildingNoteModel(
+                id: "1",
+                ownerId: "user_1",
+                motionTitle: "This house would ban artificial intelligence",
+                argumentsRichText: "Content...",
+                visibility: .publicAccess,
+                isFeedbackRequested: false,
+                updatedAt: Date()
+            )
+        )
     }
 }

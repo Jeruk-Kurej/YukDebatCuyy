@@ -1,31 +1,20 @@
 import Combine
-import FirebaseAuth  // Wajib untuk mendeteksi siapa yang login
+import FirebaseAuth
 import FirebaseFirestore
 import Foundation
 import SwiftUI
 
+/// Manages fetching random motions and synchronizing user case building notes with Firestore.
 class MotionArchiveViewModel: ObservableObject {
+
+    // MARK: - Published Properties
     @Published var motionsList: [MotionModel] = []
     @Published var searchText: String = ""
-
-    // INI ARRAY ASLI DARI FIRESTORE (Untuk User)
     @Published var myNotes: [CaseBuildingNoteModel] = []
-
-    // Array dummy dibiarkan sementara agar tab Juri (Adjudicator) tidak error kompilasi
     @Published var savedNotes: [CaseBuildingNoteModel] = []
-
     @Published var isGenerating: Bool = false
 
-    private let apiProxy: CloudFunctionsProtocol
-    private let localCache: CoreDataStorageProtocol
-
-    init(apiProxy: CloudFunctionsProtocol, localCache: CoreDataStorageProtocol)
-    {
-        self.apiProxy = apiProxy
-        self.localCache = localCache
-        loadDummyData()
-    }
-
+    // MARK: - Computed Properties
     var filteredMotions: [MotionModel] {
         if searchText.isEmpty { return motionsList }
         return motionsList.filter {
@@ -33,7 +22,6 @@ class MotionArchiveViewModel: ObservableObject {
         }
     }
 
-    // PERBAIKAN 1: List My Notes sekarang filter & baca dari data Firestore (myNotes)
     var filteredNotes: [CaseBuildingNoteModel] {
         if searchText.isEmpty { return myNotes }
         return myNotes.filter {
@@ -41,7 +29,20 @@ class MotionArchiveViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Motion Logic
+    // MARK: - Private Properties
+    private let apiProxy: CloudFunctionsProtocol
+    private let localCache: CoreDataStorageProtocol
+
+    // MARK: - Initialization
+    init(apiProxy: CloudFunctionsProtocol, localCache: CoreDataStorageProtocol)
+    {
+        self.apiProxy = apiProxy
+        self.localCache = localCache
+        loadDummyData()
+    }
+
+    // MARK: - Methods
+    /// Fetches a random debate motion from an external API with cooldown protection.
     func triggerFetchMotion() {
         guard !isGenerating else { return }
         isGenerating = true
@@ -71,14 +72,10 @@ class MotionArchiveViewModel: ObservableObject {
         }
     }
 
-    // PERBAIKAN 2: Saat Mosi disave, langsung buat dokumen ke Firestore
-    // MARK: - Pindah Mosi ke My Notes (Perbaikan Interaktif)
+    /// Converts a generated motion into an editable case-building note.
     func createNoteFromMotion(_ motion: MotionModel) {
-
-        // PERBAIKAN: Cegah duplikasi dengan mengecek ke myNotes (Firestore), bukan savedNotes
         guard !myNotes.contains(where: { $0.motionTitle == motion.title })
         else { return }
-
         guard let userId = Auth.auth().currentUser?.uid else { return }
 
         if let idx = motionsList.firstIndex(where: { $0.id == motion.id }) {
@@ -94,10 +91,10 @@ class MotionArchiveViewModel: ObservableObject {
             isFeedbackRequested: false,
             updatedAt: Date()
         )
-
         saveNote(newNote)
     }
 
+    /// Persists note updates to Firestore, ensuring adjudicator feedback is not overwritten.
     func saveNote(_ note: CaseBuildingNoteModel) {
         var noteToSave = note
         if noteToSave.ownerId == "user_me" || noteToSave.ownerId.isEmpty {
@@ -114,14 +111,12 @@ class MotionArchiveViewModel: ObservableObject {
             "updatedAt": Timestamp(date: noteToSave.updatedAt),
         ]
 
-        // Simpan feedback jika ada
         if let fText = noteToSave.feedbackText { data["feedbackText"] = fText }
         if let fProv = noteToSave.feedbackProviderName {
             data["feedbackProviderName"] = fProv
         }
 
         let db = Firestore.firestore()
-        // PERBAIKAN: Gunakan merge: true agar data juri tidak tertimpa saat debater mengedit
         db.collection("case_notes").document(noteToSave.id).setData(
             data,
             merge: true
@@ -140,22 +135,18 @@ class MotionArchiveViewModel: ObservableObject {
     }
 
     func deleteNote(at offsets: IndexSet) {
-        // Placeholder sementara jika swipe-to-delete masih aktif
+        // Placeholder for swipe-to-delete local memory logic if needed
     }
 
-    private func loadDummyData() {
-        motionsList = [
-            MotionModel(
-                id: "m1",
-                title:
-                    "Dewan ini akan melarang penggunaan AI sebagai instrumen kelulusan",
-                category: "Pendidikan & Teknologi",
-                isWishlisted: false
-            )
-        ]
+    func deleteNoteFromFirestore(noteId: String) {
+        let db = Firestore.firestore()
+        db.collection("case_notes").document(noteId).delete { error in
+            if let error = error {
+                print("Gagal menghapus catatan: \(error.localizedDescription)")
+            }
+        }
     }
 
-    // MARK: - Tarik Data Asli dari Firestore
     func fetchMyNotes(userId: String) {
         let db = Firestore.firestore()
         db.collection("case_notes").whereField("ownerId", isEqualTo: userId)
@@ -181,7 +172,6 @@ class MotionArchiveViewModel: ObservableObject {
                             as? Bool ?? false,
                         updatedAt: (data["updatedAt"] as? Timestamp)?
                             .dateValue() ?? Date(),
-                        // BACA DATA FEEDBACK
                         feedbackText: data["feedbackText"] as? String,
                         feedbackProviderName: data["feedbackProviderName"]
                             as? String
@@ -191,13 +181,15 @@ class MotionArchiveViewModel: ObservableObject {
             }
     }
 
-    // MARK: - Hapus Catatan dari Firestore
-    func deleteNoteFromFirestore(noteId: String) {
-        let db = Firestore.firestore()
-        db.collection("case_notes").document(noteId).delete { error in
-            if let error = error {
-                print("Gagal menghapus catatan: \(error.localizedDescription)")
-            }
-        }
+    private func loadDummyData() {
+        motionsList = [
+            MotionModel(
+                id: "m1",
+                title:
+                    "Dewan ini akan melarang penggunaan AI sebagai instrumen kelulusan",
+                category: "Pendidikan & Teknologi",
+                isWishlisted: false
+            )
+        ]
     }
 }

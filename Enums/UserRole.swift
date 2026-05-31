@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// Defines the access level and role-based permissions of a user within the application.
 enum UserRole: String, Codable {
     case debater = "DEBATER"
     case adjudicator = "ADJUDICATOR"

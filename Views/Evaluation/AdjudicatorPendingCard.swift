@@ -2,14 +2,12 @@
 //  AdjudicatorPendingCard.swift
 //  YukDebatCuyy
 //
-//  Created by Bryan Carlie Lukito Setiawan on 31/05/26.
-//
 
 import SwiftUI
 
+/// A card for notes awaiting review.
 struct AdjudicatorPendingCard: View {
     let note: CaseBuildingNoteModel
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -20,7 +18,7 @@ struct AdjudicatorPendingCard: View {
                     )
                 ).font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Text("BUTUH REVIEW").font(.caption2.bold()).foregroundStyle(
+                Text("NEEDS REVIEW").font(.caption2.bold()).foregroundStyle(
                     .white
                 ).padding(.horizontal, 8).padding(.vertical, 4).background(
                     Color.purple
@@ -33,14 +31,27 @@ struct AdjudicatorPendingCard: View {
                 .secondary
             ).lineLimit(2).multilineTextAlignment(.leading)
         }
-        .padding(16)
-        .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(16).background(Color.white).clipShape(
+            RoundedRectangle(cornerRadius: 14)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 14).stroke(
                 Color.black.opacity(0.05),
                 lineWidth: 1
             )
-        )
-        .padding(.horizontal, 24)
+        ).padding(.horizontal, 24)
     }
+}
+#Preview {
+    AdjudicatorPendingCard(
+        note: CaseBuildingNoteModel(
+            id: "1",
+            ownerId: "",
+            motionTitle: "Motion Title",
+            argumentsRichText: "Arguments...",
+            visibility: .publicAccess,
+            isFeedbackRequested: true,
+            updatedAt: Date()
+        )
+    )
 }
