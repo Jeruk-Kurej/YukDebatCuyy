@@ -43,7 +43,7 @@ struct CompetitionView: View {
                         }
                     }
                     .padding(.top, 16)
-                    .padding(.bottom, 100)
+                    .padding(.bottom, 120)
                 }
 
                 // TOMBOL UPLOAD FLOATING
@@ -54,9 +54,10 @@ struct CompetitionView: View {
                         .frame(width: 60, height: 60)
                         .background(Color.btnPositive)
                         .clipShape(Circle())
-                        .shadow(radius: 5)
+                        // PERBAIKAN STYLE: Shadow konsisten dan elegan
+                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
                 }
-                // REVISI: Sejajarkan posisinya sama persis dengan menu Motion
+                // PERBAIKAN PLACEMENT: Konsisten di semua page
                 .padding(.trailing, 24)
                 .padding(.bottom, 110)
             }
@@ -67,8 +68,6 @@ struct CompetitionView: View {
             .sheet(isPresented: $showUploadForm) {
                 UploadFormCompetition(viewModel: viewModel)
             }
-
-            // MEMANGGIL TOAST CUSTOM MILIKMU SECARA DINAMIS
             .modernToast(
                 message: $viewModel.statusMsg,
                 isError: viewModel.statusMsg?.contains("Failed") == true

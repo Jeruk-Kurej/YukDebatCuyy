@@ -1,10 +1,3 @@
-//
-//  CreateSparringFormView.swift
-//  YukDebatCuyy
-//
-//  Created by Bryan Carlie Lukito Setiawan on 27/05/26.
-//
-
 import SwiftUI
 
 struct CreateSparringFormView: View {
@@ -15,6 +8,7 @@ struct CreateSparringFormView: View {
         NavigationStack {
             ZStack {
                 Color.bgCream.ignoresSafeArea()
+
                 Form {
                     Section(
                         header: Text("Detail Mosi & Jadwal").font(
@@ -31,7 +25,6 @@ struct CreateSparringFormView: View {
                             Text("Politik & Sosial").tag("Politik & Sosial")
                         }
 
-                        // REVISI 5: Menggunakan style kalender compact yang lebih estetik dan tidak aneh
                         DatePicker(
                             "Waktu Pelaksanaan *",
                             selection: $viewModel.formScheduledTime,
@@ -47,7 +40,6 @@ struct CreateSparringFormView: View {
                             .caption.bold()
                         )
                     ) {
-                        // REVISI 11: Memberi tanda bintang (*)
                         TextField(
                             "Tautan Zoom/Google Meet *",
                             text: $viewModel.formMeetingLink
@@ -60,11 +52,11 @@ struct CreateSparringFormView: View {
                         Toggle(
                             "Buat Ruangan Privat",
                             isOn: $viewModel.formIsPrivate
-                        ).tint(Color.btnPositive)
+                        )
+                        .tint(Color.btnPositive)
                     }
                     .listRowBackground(Color.white)
 
-                    // REVISI 4: Button menjadi abu-abu dan tidak bisa diklik sampai Link diisi
                     Button(action: {
                         viewModel.submitRoomForm()
                         dismiss()
@@ -84,6 +76,7 @@ struct CreateSparringFormView: View {
                     )
                 }
                 .scrollContentBackground(.hidden)
+                .padding(.top, -20)  // PERBAIKAN UX: Jarak Navigation Title yang lebih compact
             }
             .navigationTitle("Buat Ruang Baru")
             .navigationBarTitleDisplayMode(.inline)
@@ -96,10 +89,4 @@ struct CreateSparringFormView: View {
             }
         }
     }
-}
-
-#Preview {
-    CreateSparringFormView(
-        viewModel: SparringViewModel(dbService: MockFirestoreService())
-    )
 }

@@ -10,90 +10,106 @@ struct UploadFormCompetition: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section(header: Text("Competition Poster")) {
-                    HStack {
-                        Spacer()
-                        PhotosPicker(
-                            selection: $selectedItem,
-                            matching: .images
-                        ) {
-                            if let imageData = viewModel.selectedImageData,
-                                let uiImage = UIImage(data: imageData)
-                            {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(height: 200)
+            // PERBAIKAN STYLE: Background Cream Khas YukDebat
+            ZStack {
+                Color.bgCream.ignoresSafeArea()
+
+                Form {
+                    Section(
+                        header: Text("Competition Poster").font(.caption.bold())
+                    ) {
+                        HStack {
+                            Spacer()
+                            PhotosPicker(
+                                selection: $selectedItem,
+                                matching: .images
+                            ) {
+                                if let imageData = viewModel.selectedImageData,
+                                    let uiImage = UIImage(data: imageData)
+                                {
+                                    Image(uiImage: uiImage).resizable()
+                                        .scaledToFill()
+                                        .frame(height: 200).clipShape(
+                                            RoundedRectangle(cornerRadius: 12)
+                                        )
+                                } else {
+                                    VStack(spacing: 12) {
+                                        Image(systemName: "photo.badge.plus")
+                                            .font(.system(size: 40))
+                                        Text("Select Poster").font(.headline)
+                                    }
+                                    .foregroundStyle(Color.accentWalnut).frame(
+                                        maxWidth: .infinity
+                                    ).frame(height: 150)
+                                    .background(Color.accentWalnut.opacity(0.1))
                                     .clipShape(
                                         RoundedRectangle(cornerRadius: 12)
                                     )
-                            } else {
-                                VStack(spacing: 12) {
-                                    Image(systemName: "photo.badge.plus").font(
-                                        .system(size: 40)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(
+                                                Color.accentWalnut,
+                                                style: StrokeStyle(
+                                                    lineWidth: 2,
+                                                    dash: [5]
+                                                )
+                                            )
                                     )
-                                    Text("Select Poster").font(.headline)
-                                }
-                                .foregroundStyle(Color.accentWalnut)
-                                .frame(maxWidth: .infinity).frame(height: 150)
-                                .background(Color.accentWalnut.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12).stroke(
-                                        Color.accentWalnut,
-                                        style: StrokeStyle(
-                                            lineWidth: 2,
-                                            dash: [5]
-                                        )
-                                    )
-                                )
-                            }
-                        }
-                        .onChange(of: selectedItem) { newItem in
-                            Task {
-                                if let data = try? await newItem?
-                                    .loadTransferable(type: Data.self)
-                                {
-                                    viewModel.selectedImageData = data
                                 }
                             }
+                            .onChange(of: selectedItem) { newItem in
+                                Task {
+                                    if let data = try? await newItem?
+                                        .loadTransferable(type: Data.self)
+                                    {
+                                        viewModel.selectedImageData = data
+                                    }
+                                }
+                            }
+                            Spacer()
                         }
-                        Spacer()
+                        .padding(.vertical, 8)
                     }
-                    .padding(.vertical, 8)
-                }
+                    .listRowBackground(Color.white)  // PERBAIKAN STYLE
 
-                Section(header: Text("Competition Details")) {
-                    TextField("Competition Name", text: $viewModel.name)
-                    TextField(
-                        "Description / Registration Info",
-                        text: $viewModel.desc,
-                        axis: .vertical
-                    )
-                    .frame(minHeight: 80)
+                    Section(
+                        header: Text("Competition Details").font(
+                            .caption.bold()
+                        )
+                    ) {
+                        TextField("Competition Name", text: $viewModel.name)
+                        TextField(
+                            "Description / Registration Info",
+                            text: $viewModel.desc,
+                            axis: .vertical
+                        )
+                        .frame(minHeight: 80)
+                    }
+                    .listRowBackground(Color.white)  // PERBAIKAN STYLE
                 }
+                .scrollContentBackground(.hidden)  // Menghilangkan background abu-abu default
+                .padding(.top, -20)  // PERBAIKAN UX: Menarik form ke atas agar jarak title tidak terlalu jauh
             }
             .navigationTitle("Add Competition")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { dismiss() }.foregroundStyle(
+                        Color.btnNegative
+                    )
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(action: {
+                    Button("Submit") {
                         viewModel.submitCompetitionData()
                         dismiss()
-                    }) {
-                        Text("Submit").fontWeight(.bold)
                     }
-                    // REVISI: Tombol mati jika deskripsi juga kosong
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.btnPositive)
                     .disabled(
                         viewModel.name.isEmpty || viewModel.desc.isEmpty
                             || viewModel.selectedImageData == nil
                             || viewModel.isLoading
                     )
-
                 }
             }
         }

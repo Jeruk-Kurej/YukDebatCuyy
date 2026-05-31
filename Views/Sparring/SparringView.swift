@@ -15,8 +15,6 @@ struct SparringView: View {
             ZStack(alignment: .bottomTrailing) {
                 Color.bgCream.ignoresSafeArea()
 
-                // HAPUS BLOK if let error = viewModel.errorMessage YANG LAMA DI SINI
-
                 ScrollView(showsIndicators: false) {
                     LazyVStack(spacing: 16) {
                         if viewModel.lobbyRooms.isEmpty {
@@ -33,7 +31,10 @@ struct SparringView: View {
                             SparringRoomCard(room: room, viewModel: viewModel)
                         }
                     }
-                    .padding(24)
+                    // PERBAIKAN HIG: Jarak atas compact, dan jarak bawah aman dari Tab Bar
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                    .padding(.bottom, 120)
                 }
 
                 // Floating Action Button (FAB)
@@ -44,21 +45,18 @@ struct SparringView: View {
                         .frame(width: 60, height: 60)
                         .background(Color.btnPositive)
                         .clipShape(Circle())
-                        .shadow(
-                            color: Color.btnPositive.opacity(0.4),
-                            radius: 10,
-                            x: 0,
-                            y: 5
-                        )
+                        // PERBAIKAN STYLE: Shadow konsisten dan elegan
+                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
                 }
-                .padding(24)
+                // PERBAIKAN PLACEMENT: Konsisten di semua page
+                .padding(.trailing, 24)
+                .padding(.bottom, 110)
             }
             .navigationTitle("Sparring Lobby")
             .onAppear { viewModel.listenToRoom(roomId: "default_room") }
             .sheet(isPresented: $viewModel.isShowingCreateRoom) {
                 CreateSparringFormView(viewModel: viewModel)
             }
-            // PASANG TOAST DI SINI (Memantau ViewModel secara reaktif)
             .modernToast(message: $viewModel.errorMessage, isError: true)
             .modernToast(message: $viewModel.alertMessage, isError: false)
         }

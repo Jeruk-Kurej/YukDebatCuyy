@@ -2,8 +2,6 @@ import SwiftUI
 
 struct MotionArchiveView: View {
     @ObservedObject var viewModel: MotionArchiveViewModel
-    
-    // 1. Panggil EnvironmentObject untuk mengecek role
     @EnvironmentObject var authVM: AuthViewModel
     
     @State private var selectedTab = 0 // 0: Explore, 1: My Notes
@@ -14,12 +12,9 @@ struct MotionArchiveView: View {
             ZStack(alignment: .bottomTrailing) {
                 Color.bgCream.ignoresSafeArea()
                 
-                // 2. LOGIKA KONDISIONAL BERDASARKAN ROLE
                 if authVM.currentUser?.role == .admin {
-                    // TAMPILAN ADMIN: Langsung muncul list mosi saja, tanpa menu tab
                     ExploreMotionListView(viewModel: viewModel)
                 } else {
-                    // TAMPILAN DEBATER/JURI: Tampilan utuh dengan navigasi
                     VStack(spacing: 0) {
                         Picker("Menu Navigasi", selection: $selectedTab) {
                             Text("Explore Motions").tag(0)
@@ -44,13 +39,15 @@ struct MotionArchiveView: View {
                                 .frame(width: 60, height: 60)
                                 .background(Color.btnPositive)
                                 .clipShape(Circle())
-                                .shadow(color: Color.btnPositive.opacity(0.3), radius: 6, x: 0, y: 3)
+                                // PERBAIKAN STYLE: Shadow konsisten dan elegan
+                                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
                         }
-                        .padding(24)
+                        // PERBAIKAN PLACEMENT: Konsisten di semua page
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 110)
                     }
                 }
             }
-            // Ubah judul dinamis
             .navigationTitle(authVM.currentUser?.role == .admin ? "Daftar Mosi" : "Motion Archive")
             .searchable(text: $viewModel.searchText, prompt: "Cari mosi...")
             .sheet(isPresented: $showingNewNoteSheet) {
