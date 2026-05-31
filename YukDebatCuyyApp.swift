@@ -1,6 +1,6 @@
 import SwiftUI
 import FirebaseCore
-import FirebaseAuth // <-- INI KUNCI UTAMANYA AGAR SWIFT MENGENALI 'userSession'
+import FirebaseAuth
 
 // 1. Inisialisasi Firebase
 class AppDelegate: NSObject, UIApplicationDelegate {
@@ -28,7 +28,7 @@ struct RootView: View {
                     MainView()
                 }
             } else {
-                LoginView()
+                AuthView()
             }
         }
     }

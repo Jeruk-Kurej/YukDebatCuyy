@@ -1,143 +1,150 @@
+//
+//  AuthViewModel.swift
+//  YukDebatCuyy
+//
+
 import Combine
 import FirebaseAuth
 import FirebaseFirestore
 import Foundation
 
-/// Manages authentication states, user registration, and role-based access checks.
+/// Manages user authentication state, registration, and user data fetching from Firestore.
 class AuthViewModel: ObservableObject {
 
     // MARK: - Published Properties
+
     @Published var userSession: FirebaseAuth.User?
     @Published var currentUser: UserModel?
+
     @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
+    @Published var errorMessage: String? = nil
 
     // MARK: - Private Properties
+
     private let db = Firestore.firestore()
 
     // MARK: - Initialization
+
     init() {
         self.userSession = Auth.auth().currentUser
-        fetchUserRole()
+        fetchUser()
     }
 
     // MARK: - Methods
-    /// Registers a new user and creates their secure document in Firestore.
-    func register(email: String, password: String, fullName: String) {
-        isLoading = true
-        errorMessage = nil
 
-        Auth.auth().createUser(withEmail: email, password: password) {
-            [weak self] result, error in
-            guard let self = self else { return }
-
-            if let error = error {
-                DispatchQueue.main.async {
-                    self.errorMessage = error.localizedDescription
-                    self.isLoading = false
-                }
-                return
-            }
-
-            guard let user = result?.user else { return }
-
-            let newUser = UserModel(
-                id: user.uid,
-                name: fullName,
-                email: email,
-                role: .debater,
-                isActive: true,
-                createdAt: Date()
-            )
-
-            let userData: [String: Any] = [
-                "id": newUser.id, "name": newUser.name, "email": newUser.email,
-                "role": "DEBATER", "isActive": newUser.isActive,
-                "createdAt": Timestamp(date: newUser.createdAt),
-            ]
-
-            self.db.collection("users").document(user.uid).setData(userData) {
-                error in
-                if let error = error {
-                    DispatchQueue.main.async {
-                        self.errorMessage = "Gagal menyimpan data pengguna."
-                        self.isLoading = false
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        self.userSession = user
-                        self.currentUser = newUser
-                        self.isLoading = false
-                    }
-                }
-            }
-        }
-    }
-
-    /// Authenticates a user and retrieves their active roles.
+    /// Logs in an existing user and fetches their profile data.
     func login(email: String, password: String) {
         isLoading = true
         errorMessage = nil
 
         Auth.auth().signIn(withEmail: email, password: password) {
             [weak self] result, error in
-            guard let self = self else { return }
+            DispatchQueue.main.async {
+                self?.isLoading = false
 
+                if let error = error {
+                    self?.errorMessage = error.localizedDescription
+                    return
+                }
+
+                self?.userSession = result?.user
+                self?.fetchUser()  // Wajib dipanggil agar UI Profil terisi
+            }
+        }
+    }
+
+    /// Registers a new user in Firebase Auth and creates a corresponding document in Firestore.
+    func register(email: String, password: String, fullName: String) {
+        isLoading = true
+        errorMessage = nil
+
+        Auth.auth().createUser(withEmail: email, password: password) {
+            [weak self] result, error in
             if let error = error {
                 DispatchQueue.main.async {
-                    self.errorMessage = error.localizedDescription
-                    self.isLoading = false
+                    self?.isLoading = false
+                    self?.errorMessage = error.localizedDescription
                 }
                 return
             }
 
-            self.userSession = result?.user
-            self.fetchUserRole()
+            guard let uid = result?.user.uid else { return }
+
+            // Persist user data to Firestore
+            let userData: [String: Any] = [
+                "id": uid,
+                "name": fullName,
+                "email": email,
+                "role": UserRole.debater.rawValue,  // Default role
+                "isActive": true,
+                "createdAt": Timestamp(date: Date()),
+            ]
+
+            self?.db.collection("users").document(uid).setData(userData) {
+                error in
+                DispatchQueue.main.async {
+                    self?.isLoading = false
+                    if let error = error {
+                        self?.errorMessage = error.localizedDescription
+                        return
+                    }
+                    self?.userSession = result?.user
+                    self?.fetchUser()  // Tarik data langsung setelah register
+                }
+            }
         }
     }
 
-    /// Signs the user out from Firebase Session securely.
+    /// Signs out the user and clears local state.
     func logout() {
         do {
             try Auth.auth().signOut()
-            self.userSession = nil
-            self.currentUser = nil
+            DispatchQueue.main.async {
+                self.userSession = nil
+                self.currentUser = nil
+            }
         } catch {
-            print("Error signing out: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.errorMessage =
+                    "Failed to log out: \(error.localizedDescription)"
+            }
         }
     }
 
-    /// Listens for real-time changes to the user's role (e.g., when approved as an Adjudicator).
-    func fetchUserRole() {
-        guard let uid = userSession?.uid else {
-            DispatchQueue.main.async { self.isLoading = false }
-            return
-        }
+    /// Fetches the extended user profile from Firestore securely with real-time updates.
+    func fetchUser() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
 
         db.collection("users").document(uid).addSnapshotListener {
             [weak self] snapshot, error in
             DispatchQueue.main.async {
-                self?.isLoading = false
-                if let data = snapshot?.data(),
-                    let id = data["id"] as? String,
-                    let name = data["name"] as? String,
-                    let email = data["email"] as? String
-                {
-
-                    let roleStr = data["role"] as? String ?? "DEBATER"
-                    let role = UserRole(rawValue: roleStr) ?? .debater
-                    let isActive = data["isActive"] as? Bool ?? true
-                    let createdAt =
-                        (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-
-                    self?.currentUser = UserModel(
-                        id: id,
-                        name: name,
-                        email: email,
-                        role: role,
-                        isActive: isActive,
-                        createdAt: createdAt
+                // PENAMBAHAN LOGIKA KEAMANAN: Jika data di Firestore hilang/dihapus...
+                guard let data = snapshot?.data() else {
+                    print(
+                        "Error: Document completely missing from Firestore for this UID."
                     )
+                    self?.errorMessage =
+                        "Sesi tidak valid atau data terhapus. Silakan Register ulang."
+                    self?.logout()  // Paksa user keluar agar tidak stuck di loading screen!
+                    return
+                }
+
+                self?.currentUser = UserModel(
+                    id: uid,
+                    name: data["name"] as? String ?? "YukDebat User",
+                    email: data["email"] as? String ?? "",
+                    role: UserRole(
+                        rawValue: data["role"] as? String ?? "DEBATER"
+                    ) ?? .debater,
+                    isActive: data["isActive"] as? Bool ?? true,
+                    createdAt: (data["createdAt"] as? Timestamp)?.dateValue()
+                        ?? Date()
+                )
+
+                if self?.currentUser?.isActive == false {
+                    self?.errorMessage =
+                        "Akun Anda telah ditangguhkan (Suspend) oleh Administrator."
+                    self?.logout()
                 }
             }
         }

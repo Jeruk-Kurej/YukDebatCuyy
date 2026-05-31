@@ -162,11 +162,6 @@ class ModerationDashboardViewModel: ObservableObject {
             "status": status
         ])
     }
-    func suspendUser(userId: String, isActive: Bool) {
-        db.collection("users").document(userId).updateData([
-            "isActive": isActive
-        ])
-    }
     func deletePublicNote(noteId: String) {
         db.collection("case_notes").document(noteId).delete()
     }
@@ -189,7 +184,6 @@ class ModerationDashboardViewModel: ObservableObject {
         batch.commit { _ in }
     }
 
-    /// Approves a motion and saves it into the official motions collection.
     func approveMotionRequest(req: MotionRequestModel) {
         let batch = db.batch()
         batch.updateData(
@@ -207,5 +201,17 @@ class ModerationDashboardViewModel: ObservableObject {
             forDocument: db.collection("motions").document(req.id)
         )
         batch.commit { _ in }
+    }
+
+    /// Toggles the suspension state of a user. Includes a security check to prevent Admin suspension.
+    func suspendUser(user: UserModel, isActive: Bool) {
+        // SECURITY CHECK: Menangkal dari level logika bisnis
+        guard user.role != .admin else {
+            print("Action Denied: Administrator accounts cannot be suspended.")
+            return
+        }
+        db.collection("users").document(user.id).updateData([
+            "isActive": isActive
+        ])
     }
 }

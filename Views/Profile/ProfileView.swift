@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-/// Displays the user's account details, role status, and settings options.
+/// Displays the user's account details and settings options.
 struct ProfileView: View {
 
     // MARK: - Properties
@@ -38,28 +38,21 @@ struct ProfileView: View {
                                 )
 
                             VStack(spacing: 4) {
-                                Text(authVM.currentUser?.name ?? "Loading...")
-                                    .font(.title2.bold())
-                                    .foregroundStyle(Color.textCharcoal)
-
-                                Text(authVM.currentUser?.email ?? "Loading...")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            HStack {
-                                Image(systemName: "checkmark.seal.fill")
+                                // Mengganti fallback "Loading..." agar lebih rapi saat data belum masuk atau di Preview
                                 Text(
-                                    (authVM.currentUser?.role.rawValue
-                                        ?? "DEBATER").uppercased()
+                                    authVM.currentUser?.name ?? "YukDebat User"
                                 )
+                                .font(.title2.bold())
+                                .foregroundStyle(Color.textCharcoal)
+
+                                Text(
+                                    authVM.currentUser?.email
+                                        ?? "Fetching email..."
+                                )
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                             }
-                            .font(.caption.bold())
-                            .foregroundStyle(Color.btnPositive)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.btnPositive.opacity(0.1))
-                            .clipShape(Capsule())
+                            // Badge Role (DEBATER) telah dihapus sesuai permintaan
                         }
 
                         // Settings Menu
@@ -69,7 +62,6 @@ struct ProfileView: View {
                                 title: "Edit Account Information"
                             )
 
-                            // NEW: Sparring Feedbacks Link (UC04)
                             Divider().padding(.leading, 40)
                             NavigationLink(
                                 destination: MySparringFeedbacksView()
