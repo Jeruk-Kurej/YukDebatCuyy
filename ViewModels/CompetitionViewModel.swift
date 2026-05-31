@@ -61,15 +61,21 @@ class CompetitionViewModel: ObservableObject {
 
     // LOGIKA JALAN TIKUS: Bypass Storage dengan Base64
     func submitCompetitionData() {
+        // REVISI: Cegah akun tanpa email valid untuk submit
         guard let currentUserId = Auth.auth().currentUser?.uid,
-            let imageData = selectedImageData
+            let userEmail = Auth.auth().currentUser?.email, !userEmail.isEmpty
         else {
+            self.statusMsg = "Akses ditolak: Akun/Email tidak valid."
+            return
+        }
+
+        guard let imageData = selectedImageData else {
             self.statusMsg = "Select a poster image first!"
             return
         }
 
         isLoading = true
-        self.statusMsg = "Uploading competition..."  // Kasih notif loading awal
+        self.statusMsg = "Uploading competition..."
 
         let newDocRef = db.collection("competitions").document()
 
@@ -83,19 +89,17 @@ class CompetitionViewModel: ObservableObject {
 
         let base64String = compressedData.base64EncodedString()
 
-        let userEmail = Auth.auth().currentUser?.email ?? "Unknown Email" // Ambil email otomatis
-            
-            let data: [String: Any] = [
-                "id": newDocRef.documentID,
-                "promoterId": currentUserId,
-                "promoterEmail": userEmail, // <-- Simpan email ke database
-                "name": self.name,
-                "description": self.desc,
-                "posterUrl": base64String,
-                "status": "PENDING",
-                "eventDate": Timestamp(date: Date().addingTimeInterval(864000)),
-                "registrationUrl": "https://forms.gle/dummy"
-            ]
+        let data: [String: Any] = [
+            "id": newDocRef.documentID,
+            "promoterId": currentUserId,
+            "promoterEmail": userEmail,  // Email asli tersimpan!
+            "name": self.name,
+            "description": self.desc,
+            "posterUrl": base64String,
+            "status": "PENDING",
+            "eventDate": Timestamp(date: Date().addingTimeInterval(864000)),
+            "registrationUrl": "https://forms.gle/dummy",
+        ]
 
         newDocRef.setData(data) { error in
             DispatchQueue.main.async {

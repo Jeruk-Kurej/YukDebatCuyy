@@ -3,12 +3,12 @@ import SwiftUI
 struct CompetitionView: View {
     @StateObject private var viewModel = CompetitionViewModel()
     @State private var showUploadForm = false
-    
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
                 Color.bgCream.ignoresSafeArea()
-                
+
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
                         // 1. LIST PENDING
@@ -18,20 +18,25 @@ struct CompetitionView: View {
                                     .font(.headline)
                                     .foregroundStyle(Color.textCharcoal)
                                     .padding(.horizontal, 24)
-                                
-                                ForEach(viewModel.myPendingCompetitions) { comp in
+
+                                ForEach(viewModel.myPendingCompetitions) {
+                                    comp in
                                     CompetitionCard(comp: comp, isPending: true)
                                 }
                             }
                         }
-                        
+
                         // 2. LIST ACTIVE
                         VStack(alignment: .leading) {
-                            Text(viewModel.activeCompetitions.isEmpty ? "No active competitions." : "Latest Competitions")
-                                .font(.headline)
-                                .foregroundStyle(Color.textCharcoal)
-                                .padding(.horizontal, 24)
-                            
+                            Text(
+                                viewModel.activeCompetitions.isEmpty
+                                    ? "No active competitions."
+                                    : "Latest Competitions"
+                            )
+                            .font(.headline)
+                            .foregroundStyle(Color.textCharcoal)
+                            .padding(.horizontal, 24)
+
                             ForEach(viewModel.activeCompetitions) { comp in
                                 CompetitionCard(comp: comp, isPending: false)
                             }
@@ -40,7 +45,7 @@ struct CompetitionView: View {
                     .padding(.top, 16)
                     .padding(.bottom, 100)
                 }
-                
+
                 // TOMBOL UPLOAD FLOATING
                 Button(action: { showUploadForm = true }) {
                     Image(systemName: "plus")
@@ -51,8 +56,9 @@ struct CompetitionView: View {
                         .clipShape(Circle())
                         .shadow(radius: 5)
                 }
-                .padding(24)
-                .padding(.bottom, 60)
+                // REVISI: Sejajarkan posisinya sama persis dengan menu Motion
+                .padding(.trailing, 24)
+                .padding(.bottom, 110)
             }
             .navigationTitle("Competitions")
             .onAppear {
@@ -61,11 +67,12 @@ struct CompetitionView: View {
             .sheet(isPresented: $showUploadForm) {
                 UploadFormCompetition(viewModel: viewModel)
             }
-            
+
             // MEMANGGIL TOAST CUSTOM MILIKMU SECARA DINAMIS
             .modernToast(
                 message: $viewModel.statusMsg,
-                isError: viewModel.statusMsg?.contains("Failed") == true || viewModel.statusMsg?.contains("Select") == true
+                isError: viewModel.statusMsg?.contains("Failed") == true
+                    || viewModel.statusMsg?.contains("Select") == true
             )
         }
     }

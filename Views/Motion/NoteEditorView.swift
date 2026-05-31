@@ -20,10 +20,15 @@ struct NoteEditorView: View {
         Form {
             Section(header: Text("Detail Mosi Lomba")) {
                 // REVISI 11: Label bintang untuk field wajib
-                TextField("Judul Mosi *", text: $draftNote.motionTitle, axis: .vertical)
-                    .font(.system(.body, design: .serif, weight: .medium))
+                TextField(
+                    "Judul Mosi *",
+                    text: $draftNote.motionTitle,
+                    axis: .vertical
+                )
+                .font(.system(.body, design: .serif, weight: .medium))
 
-                Picker("Visibilitas Catatan", selection: $draftNote.visibility) {
+                Picker("Visibilitas Catatan", selection: $draftNote.visibility)
+                {
                     Text("Private").tag(VisibilityType.privateAccess)
                     Text("Public").tag(VisibilityType.publicAccess)
                 }
@@ -41,7 +46,6 @@ struct NoteEditorView: View {
         .scrollContentBackground(.hidden)
         .background(Color.bgCream)
 
-        // REVISI 10: Dinamika Title
         .navigationTitle(isNewNote ? "Tambah Catatan" : "Edit Catatan")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -55,7 +59,10 @@ struct NoteEditorView: View {
                     dismiss()
                 }
                 .fontWeight(.bold)
-                .foregroundStyle(draftNote.motionTitle.isEmpty ? Color.gray : Color.btnPositive)
+                .foregroundStyle(
+                    draftNote.motionTitle.isEmpty
+                        ? Color.gray : Color.btnPositive
+                )
                 .disabled(draftNote.motionTitle.isEmpty)
             }
         }
