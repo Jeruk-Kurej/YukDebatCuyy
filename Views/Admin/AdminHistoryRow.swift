@@ -39,7 +39,7 @@ struct AdminHistoryRow: View {
                     .foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
-            Image(systemName: "checkmark.seal.fill").font(.title2)
+            Image(systemName: "checkmark").font(.title2)
                 .foregroundStyle(Color.btnPositive)
         }
         .padding(16).background(Color.white).clipShape(

@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// Displays a list of random or searchable debate motions.
-/// Allows Debaters to generate new motions or save them into their personal case building notes.
+/// Allows Debaters to generate new motions, suggest custom ones, or save them.
 struct ExploreMotionListView: View {
 
     // MARK: - Properties
@@ -14,38 +14,54 @@ struct ExploreMotionListView: View {
     @ObservedObject var viewModel: MotionArchiveViewModel
     @EnvironmentObject var authVM: AuthViewModel
 
+    @State private var showingSubmitSheet = false
+
     // MARK: - Body
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            Button(action: { viewModel.triggerFetchMotion() }) {
-                HStack(spacing: 8) {
-                    if viewModel.isGenerating {
-                        ProgressView().tint(.white)
-                        Text("Searching Motion...")
-                            .font(.subheadline.bold())
-                    } else {
-                        Image(systemName: "sparkles")
-                        Text("Generate Random Motion")
-                            .font(.subheadline.bold())
+            VStack(spacing: 12) {
+                // Generate Button
+                Button(action: { viewModel.triggerFetchMotion() }) {
+                    HStack(spacing: 8) {
+                        if viewModel.isGenerating {
+                            ProgressView().tint(.white)
+                            Text("Searching Motion...")
+                                .font(.subheadline.bold())
+                        } else {
+                            Image(systemName: "sparkles")
+                            Text("Generate Random Motion")
+                                .font(.subheadline.bold())
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(
+                        viewModel.isGenerating
+                            ? Color.btnPositive.opacity(0.6) : Color.btnPositive
+                    )
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(viewModel.isGenerating)
+
+                // Suggest Custom Motion Button
+                if authVM.currentUser?.role != .admin {
+                    Button(action: { showingSubmitSheet = true }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus.bubble.fill")
+                            Text("Suggest Custom Motion")
+                                .font(.subheadline.bold())
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.accentWalnut)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(
-                    viewModel.isGenerating
-                        ? Color.btnPositive.opacity(0.6) : Color.btnPositive
-                )
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .scaleEffect(viewModel.isGenerating ? 0.97 : 1.0)
-                .animation(
-                    .easeInOut(duration: 0.2),
-                    value: viewModel.isGenerating
-                )
             }
             .padding([.horizontal, .top])
-            .disabled(viewModel.isGenerating)
 
             LazyVStack(spacing: 12) {
                 ForEach(viewModel.filteredMotions) { motion in
@@ -125,16 +141,19 @@ struct ExploreMotionListView: View {
                 }
             }
             .padding(.top, 8)
-            .animation(
-                .spring(response: 0.4, dampingFraction: 0.8),
-                value: viewModel.filteredMotions
-            )
         }
         .onAppear {
             if let userId = authVM.currentUser?.id {
                 viewModel.fetchMyNotes(userId: userId)
             }
         }
+        .sheet(isPresented: $showingSubmitSheet) {
+            SubmitMotionFormView(viewModel: viewModel)
+        }
+        .modernToast(
+            message: $viewModel.statusMessage,
+            isError: viewModel.statusMessage?.contains("Failed") == true
+        )
     }
 }
 

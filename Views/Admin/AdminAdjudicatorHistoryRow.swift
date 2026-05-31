@@ -31,7 +31,7 @@ struct AdminAdjudicatorHistoryRow: View {
             Spacer()
 
             // STATUS BADGE STATIS (Bukan Tombol)
-            Image(systemName: "checkmark.seal.fill")
+            Image(systemName: "checkmark")
                 .font(.title2).foregroundStyle(Color.btnPositive)
         }
         .padding(16).background(Color.white).clipShape(

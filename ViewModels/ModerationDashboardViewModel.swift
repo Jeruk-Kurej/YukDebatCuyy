@@ -8,7 +8,6 @@ import FirebaseFirestore
 import Foundation
 
 /// Provides comprehensive data aggregation for the Admin Moderation Dashboard.
-/// Handles approvals, rejections, user suspensions, and public content moderation.
 class ModerationDashboardViewModel: ObservableObject {
 
     // MARK: - Published Properties
@@ -20,6 +19,7 @@ class ModerationDashboardViewModel: ObservableObject {
 
     @Published var allUsers: [UserModel] = []
     @Published var publicNotes: [CaseBuildingNoteModel] = []
+    @Published var pendingMotions: [MotionRequestModel] = []
 
     // MARK: - Private Properties
 
@@ -27,18 +27,15 @@ class ModerationDashboardViewModel: ObservableObject {
 
     // MARK: - Methods
 
-    /// Subscribes to all pending and approved moderation entities, including users and public notes.
     func fetchAllModeration() {
         // Fetch Competitions
         db.collection("competitions").addSnapshotListener { snapshot, _ in
             guard let docs = snapshot?.documents else { return }
             var tempPending: [CompetitionModel] = []
             var tempApproved: [CompetitionModel] = []
-
             for doc in docs {
                 let data = doc.data()
                 let status = data["status"] as? String ?? "PENDING"
-
                 let model = CompetitionModel(
                     id: doc.documentID,
                     promoterId: data["promoterId"] as? String ?? "",
@@ -52,7 +49,6 @@ class ModerationDashboardViewModel: ObservableObject {
                     posterStorageUrl: data["posterUrl"] as? String ?? "",
                     status: ReviewStatus(rawValue: status) ?? .pending
                 )
-
                 if status == "PENDING" {
                     tempPending.append(model)
                 } else if status == "ACTIVE" {
@@ -70,11 +66,9 @@ class ModerationDashboardViewModel: ObservableObject {
             guard let docs = snapshot?.documents else { return }
             var tempPendingAdj: [AdjudicatorRequestModel] = []
             var tempApprovedAdj: [AdjudicatorRequestModel] = []
-
             for doc in docs {
                 let data = doc.data()
                 let status = data["status"] as? String ?? "PENDING"
-
                 let model = AdjudicatorRequestModel(
                     id: doc.documentID,
                     userId: data["userId"] as? String ?? "",
@@ -86,7 +80,6 @@ class ModerationDashboardViewModel: ObservableObject {
                     submittedAt: (data["submittedAt"] as? Timestamp)?
                         .dateValue() ?? Date()
                 )
-
                 if status == "PENDING" {
                     tempPendingAdj.append(model)
                 } else if status == "ACTIVE" {
@@ -97,7 +90,27 @@ class ModerationDashboardViewModel: ObservableObject {
             self.approvedAdjudicators = tempApprovedAdj
         }
 
-        // Fetch All Users for Suspension Management
+        // Fetch Custom Motion Requests
+        db.collection("motion_requests").whereField(
+            "status",
+            isEqualTo: "PENDING"
+        ).addSnapshotListener { snapshot, _ in
+            guard let docs = snapshot?.documents else { return }
+            self.pendingMotions = docs.compactMap { doc in
+                let data = doc.data()
+                return MotionRequestModel(
+                    id: doc.documentID,
+                    title: data["title"] as? String ?? "",
+                    category: data["category"] as? String ?? "General",
+                    submitterId: data["submitterId"] as? String ?? "",
+                    status: .pending,
+                    submittedAt: (data["submittedAt"] as? Timestamp)?
+                        .dateValue() ?? Date()
+                )
+            }
+        }
+
+        // Fetch Users and Notes
         db.collection("users").addSnapshotListener { snapshot, _ in
             guard let docs = snapshot?.documents else { return }
             self.allUsers = docs.compactMap { doc in
@@ -116,7 +129,6 @@ class ModerationDashboardViewModel: ObservableObject {
             }
         }
 
-        // Fetch Public Notes for Content Moderation
         db.collection("case_notes").whereField(
             "visibility",
             isEqualTo: "PUBLIC"
@@ -143,38 +155,57 @@ class ModerationDashboardViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Modification Methods
+
     func updateStatus(compId: String, to status: String) {
         db.collection("competitions").document(compId).updateData([
             "status": status
         ])
     }
-
-    func approveAdjudicator(reqId: String, userId: String) {
-        let batch = db.batch()
-        let reqRef = db.collection("adjudicator_requests").document(reqId)
-        batch.updateData(["status": "ACTIVE"], forDocument: reqRef)
-
-        let userRef = db.collection("users").document(userId)
-        batch.updateData(["role": "ADJUDICATOR"], forDocument: userRef)
-
-        batch.commit { error in
-            if let error = error {
-                print(
-                    "Error approving adjudicator: \(error.localizedDescription)"
-                )
-            }
-        }
-    }
-
-    /// Toggles the suspension state of a user.
     func suspendUser(userId: String, isActive: Bool) {
         db.collection("users").document(userId).updateData([
             "isActive": isActive
         ])
     }
-
-    /// Hard deletes a public note that violates community guidelines.
     func deletePublicNote(noteId: String) {
         db.collection("case_notes").document(noteId).delete()
+    }
+    func rejectMotionRequest(reqId: String) {
+        db.collection("motion_requests").document(reqId).updateData([
+            "status": "REJECTED"
+        ])
+    }
+
+    func approveAdjudicator(reqId: String, userId: String) {
+        let batch = db.batch()
+        batch.updateData(
+            ["status": "ACTIVE"],
+            forDocument: db.collection("adjudicator_requests").document(reqId)
+        )
+        batch.updateData(
+            ["role": "ADJUDICATOR"],
+            forDocument: db.collection("users").document(userId)
+        )
+        batch.commit { _ in }
+    }
+
+    /// Approves a motion and saves it into the official motions collection.
+    func approveMotionRequest(req: MotionRequestModel) {
+        let batch = db.batch()
+        batch.updateData(
+            ["status": "ACTIVE"],
+            forDocument: db.collection("motion_requests").document(req.id)
+        )
+
+        let officialMotionData: [String: Any] = [
+            "id": req.id,
+            "title": req.title,
+            "category": req.category,
+        ]
+        batch.setData(
+            officialMotionData,
+            forDocument: db.collection("motions").document(req.id)
+        )
+        batch.commit { _ in }
     }
 }

@@ -9,7 +9,7 @@ import FirebaseFirestore
 import Foundation
 import SwiftUI
 
-/// Manages fetching random motions and synchronizing user case building notes with Firestore.
+/// Manages fetching random motions, synchronizing case building notes, and submitting custom motions.
 class MotionArchiveViewModel: ObservableObject {
 
     // MARK: - Published Properties
@@ -18,7 +18,10 @@ class MotionArchiveViewModel: ObservableObject {
     @Published var searchText: String = ""
     @Published var myNotes: [CaseBuildingNoteModel] = []
     @Published var communityNotes: [CaseBuildingNoteModel] = []
+
     @Published var isGenerating: Bool = false
+    @Published var isLoading: Bool = false
+    @Published var statusMessage: String? = nil
 
     // MARK: - Computed Properties
 
@@ -33,6 +36,7 @@ class MotionArchiveViewModel: ObservableObject {
 
     private let apiProxy: CloudFunctionsProtocol
     private let localCache: CoreDataStorageProtocol
+    private let db = Firestore.firestore()
 
     // MARK: - Initialization
 
@@ -45,7 +49,6 @@ class MotionArchiveViewModel: ObservableObject {
 
     // MARK: - Methods
 
-    /// Fetches a random debate motion from an external API with cooldown protection.
     func triggerFetchMotion() {
         guard !isGenerating else { return }
         isGenerating = true
@@ -75,7 +78,36 @@ class MotionArchiveViewModel: ObservableObject {
         }
     }
 
-    /// Converts a generated motion into an editable case-building note.
+    /// Submits a user-generated custom motion to Firestore for Admin moderation (FR-6.1).
+    func submitCustomMotion(title: String, category: String) {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        isLoading = true
+
+        let newId = UUID().uuidString
+        let data: [String: Any] = [
+            "id": newId,
+            "title": title,
+            "category": category,
+            "submitterId": userId,
+            "status": ReviewStatus.pending.rawValue,
+            "submittedAt": Timestamp(date: Date()),
+        ]
+
+        db.collection("motion_requests").document(newId).setData(data) {
+            [weak self] error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                if let error = error {
+                    self?.statusMessage =
+                        "Failed to submit: \(error.localizedDescription)"
+                } else {
+                    self?.statusMessage =
+                        "Motion successfully submitted for review!"
+                }
+            }
+        }
+    }
+
     func createNoteFromMotion(_ motion: MotionModel) {
         guard !myNotes.contains(where: { $0.motionTitle == motion.title })
         else { return }
@@ -97,7 +129,6 @@ class MotionArchiveViewModel: ObservableObject {
         saveNote(newNote)
     }
 
-    /// Persists note updates to Firestore.
     func saveNote(_ note: CaseBuildingNoteModel) {
         var noteToSave = note
         if noteToSave.ownerId == "user_me" || noteToSave.ownerId.isEmpty {
@@ -119,58 +150,44 @@ class MotionArchiveViewModel: ObservableObject {
             data["feedbackProviderName"] = fProv
         }
 
-        let db = Firestore.firestore()
         db.collection("case_notes").document(noteToSave.id).setData(
             data,
             merge: true
-        ) { error in
-            if let error = error {
-                print("Error save: \(error.localizedDescription)")
-            }
-        }
+        )
     }
 
     func requestFeedback(for noteId: String) {
-        let db = Firestore.firestore()
         db.collection("case_notes").document(noteId).updateData([
             "isFeedbackRequested": true
         ])
     }
 
     func deleteNoteFromFirestore(noteId: String) {
-        let db = Firestore.firestore()
-        db.collection("case_notes").document(noteId).delete { error in
-            if let error = error {
-                print("Gagal menghapus catatan: \(error.localizedDescription)")
-            }
-        }
+        db.collection("case_notes").document(noteId).delete()
     }
 
     func fetchMyNotes(userId: String) {
-        let db = Firestore.firestore()
         db.collection("case_notes").whereField("ownerId", isEqualTo: userId)
-            .addSnapshotListener { snapshot, error in
+            .addSnapshotListener { snapshot, _ in
                 guard let documents = snapshot?.documents else { return }
                 self.myNotes = self.mapDocumentsToNotes(documents)
             }
     }
 
-    /// Fetches all public notes for the community feed.
     func fetchCommunityNotes() {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return }
 
-        let db = Firestore.firestore()
-        db.collection("case_notes")
-            .whereField("visibility", isEqualTo: "PUBLIC")
-            .addSnapshotListener { snapshot, error in
-                guard let documents = snapshot?.documents else { return }
-
-                let allPublic = self.mapDocumentsToNotes(documents)
-                // Filter out user's own notes so they only see others' notes
-                self.communityNotes = allPublic.filter {
-                    $0.ownerId != currentUserId
-                }
+        db.collection("case_notes").whereField(
+            "visibility",
+            isEqualTo: "PUBLIC"
+        )
+        .addSnapshotListener { snapshot, _ in
+            guard let documents = snapshot?.documents else { return }
+            let allPublic = self.mapDocumentsToNotes(documents)
+            self.communityNotes = allPublic.filter {
+                $0.ownerId != currentUserId
             }
+        }
     }
 
     private func mapDocumentsToNotes(_ documents: [QueryDocumentSnapshot])
@@ -206,7 +223,7 @@ class MotionArchiveViewModel: ObservableObject {
                 id: "m1",
                 title:
                     "This house would ban artificial intelligence in education",
-                category: "Education & Tech",
+                category: "Education",
                 isWishlisted: false
             )
         ]

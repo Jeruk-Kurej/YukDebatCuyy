@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-/// The central hub for Admin users to moderate competitions, adjudicators, and system content.
+/// The central hub for Admin users to moderate competitions, adjudicators, motions, and content.
 struct ModerationDashboardView: View {
 
     // MARK: - Properties
@@ -34,7 +34,90 @@ struct ModerationDashboardView: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 16) {
                             if selectedTab == 0 {
-                                // PENDING TAB
+                                // 1. MOTIONS
+                                Section(
+                                    header: Text("Custom Motions")
+                                        .font(.subheadline.bold())
+                                        .foregroundStyle(.blue).padding(
+                                            .horizontal,
+                                            24
+                                        ).frame(
+                                            maxWidth: .infinity,
+                                            alignment: .leading
+                                        )
+                                ) {
+                                    if viewModel.pendingMotions.isEmpty {
+                                        Text("No pending motion requests.")
+                                            .font(.caption).foregroundStyle(
+                                                .secondary
+                                            ).padding(.horizontal, 24)
+                                    } else {
+                                        ForEach(viewModel.pendingMotions) {
+                                            req in
+                                            HStack {
+                                                VStack(alignment: .leading) {
+                                                    Text(req.title).font(
+                                                        .headline
+                                                    ).lineLimit(2)
+                                                    Text(req.category).font(
+                                                        .caption
+                                                    ).foregroundStyle(
+                                                        Color.accentWalnut
+                                                    )
+                                                }
+                                                Spacer()
+                                                Button(action: {
+                                                    viewModel
+                                                        .rejectMotionRequest(
+                                                            reqId: req.id
+                                                        )
+                                                }) {
+                                                    Image(
+                                                        systemName:
+                                                            "xmark.circle.fill"
+                                                    ).font(.title2)
+                                                        .foregroundStyle(
+                                                            Color.btnNegative
+                                                        )
+                                                }
+                                                Button(action: {
+                                                    viewModel
+                                                        .approveMotionRequest(
+                                                            req: req
+                                                        )
+                                                }) {
+                                                    Image(
+                                                        systemName:
+                                                            "checkmark"
+                                                    ).font(.title2)
+                                                        .foregroundStyle(
+                                                            Color.btnPositive
+                                                        )
+                                                }
+                                                .padding(.leading, 8)
+                                            }
+                                            .padding(16).background(Color.white)
+                                            .clipShape(
+                                                RoundedRectangle(
+                                                    cornerRadius: 12
+                                                )
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(
+                                                    cornerRadius: 12
+                                                ).stroke(
+                                                    Color.black.opacity(0.05),
+                                                    lineWidth: 1
+                                                )
+                                            )
+                                            .padding(.horizontal, 20)
+                                        }
+                                    }
+                                }
+
+                                Divider().padding(.vertical, 16)
+
+                                // 2. COMPETITIONS
                                 Section(
                                     header: Text("Competitions").font(
                                         .subheadline.bold()
@@ -69,6 +152,7 @@ struct ModerationDashboardView: View {
 
                                 Divider().padding(.vertical, 16)
 
+                                // 3. ADJUDICATORS
                                 Section(
                                     header: Text("Adjudicator Requests").font(
                                         .subheadline.bold()
@@ -151,7 +235,7 @@ struct ModerationDashboardView: View {
                                 }
 
                             } else {
-                                // NEW: USERS & CONTENT TAB (UC06)
+                                // USERS & CONTENT TAB
                                 Section(
                                     header: Text("User Management").font(
                                         .subheadline.bold()
