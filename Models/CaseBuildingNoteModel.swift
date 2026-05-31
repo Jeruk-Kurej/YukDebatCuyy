@@ -17,7 +17,10 @@ struct CaseBuildingNoteModel: Codable, Identifiable {
     var visibility: VisibilityType
     var isFeedbackRequested: Bool
     var updatedAt: Date
-    
+
+    var feedbackText: String?
+    var feedbackProviderName: String?
+
     /// Validates if the note has sufficient content before allowing cloud synchronization.
     func validateContent() -> Bool {
         return !motionTitle.isEmpty && argumentsRichText.count >= 50

@@ -98,15 +98,13 @@ class MotionArchiveViewModel: ObservableObject {
         saveNote(newNote)
     }
 
-    // PERBAIKAN 3: Override CRUD Normal agar masuk ke Firestore Murni
     func saveNote(_ note: CaseBuildingNoteModel) {
         var noteToSave = note
         if noteToSave.ownerId == "user_me" || noteToSave.ownerId.isEmpty {
             noteToSave.ownerId = Auth.auth().currentUser?.uid ?? "unknown"
         }
 
-        let db = Firestore.firestore()
-        let data: [String: Any] = [
+        var data: [String: Any] = [
             "id": noteToSave.id,
             "ownerId": noteToSave.ownerId,
             "motionTitle": noteToSave.motionTitle,
@@ -116,8 +114,18 @@ class MotionArchiveViewModel: ObservableObject {
             "updatedAt": Timestamp(date: noteToSave.updatedAt),
         ]
 
-        db.collection("case_notes").document(noteToSave.id).setData(data) {
-            error in
+        // Simpan feedback jika ada
+        if let fText = noteToSave.feedbackText { data["feedbackText"] = fText }
+        if let fProv = noteToSave.feedbackProviderName {
+            data["feedbackProviderName"] = fProv
+        }
+
+        let db = Firestore.firestore()
+        // PERBAIKAN: Gunakan merge: true agar data juri tidak tertimpa saat debater mengedit
+        db.collection("case_notes").document(noteToSave.id).setData(
+            data,
+            merge: true
+        ) { error in
             if let error = error {
                 print("Error save: \(error.localizedDescription)")
             }
@@ -150,8 +158,7 @@ class MotionArchiveViewModel: ObservableObject {
     // MARK: - Tarik Data Asli dari Firestore
     func fetchMyNotes(userId: String) {
         let db = Firestore.firestore()
-        db.collection("case_notes")
-            .whereField("ownerId", isEqualTo: userId)
+        db.collection("case_notes").whereField("ownerId", isEqualTo: userId)
             .addSnapshotListener { snapshot, error in
                 guard let documents = snapshot?.documents else { return }
 
@@ -173,14 +180,17 @@ class MotionArchiveViewModel: ObservableObject {
                         isFeedbackRequested: data["isFeedbackRequested"]
                             as? Bool ?? false,
                         updatedAt: (data["updatedAt"] as? Timestamp)?
-                            .dateValue() ?? Date()
+                            .dateValue() ?? Date(),
+                        // BACA DATA FEEDBACK
+                        feedbackText: data["feedbackText"] as? String,
+                        feedbackProviderName: data["feedbackProviderName"]
+                            as? String
                     )
                 }
-
                 self.myNotes.sort { $0.updatedAt > $1.updatedAt }
             }
     }
-    
+
     // MARK: - Hapus Catatan dari Firestore
     func deleteNoteFromFirestore(noteId: String) {
         let db = Firestore.firestore()

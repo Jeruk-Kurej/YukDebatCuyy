@@ -88,15 +88,56 @@ struct ModerationDashboardView: View {
                                 }
 
                             } else {
-                                // --- TAB 2: HISTORY LIST (TANPA TOMBOL) ---
-                                if viewModel.approvedList.isEmpty {
-                                    Text("No approved competitions yet.")
-                                        .font(.subheadline).foregroundStyle(
-                                            .secondary
-                                        ).padding(.top, 40)
-                                } else {
-                                    ForEach(viewModel.approvedList) { comp in
-                                        AdminHistoryRow(comp: comp)
+                                // --- TAB 2: HISTORY LIST ---
+                                // SEKSI 1: HISTORY KOMPETISI
+                                Section(
+                                    header: Text("Approved Competitions").font(
+                                        .subheadline.bold()
+                                    ).foregroundStyle(.green).padding(
+                                        .horizontal,
+                                        24
+                                    ).frame(
+                                        maxWidth: .infinity,
+                                        alignment: .leading
+                                    )
+                                ) {
+                                    if viewModel.approvedList.isEmpty {
+                                        Text("No approved competitions yet.")
+                                            .font(.caption).foregroundStyle(
+                                                .secondary
+                                            ).padding(.horizontal, 24)
+                                    } else {
+                                        ForEach(viewModel.approvedList) {
+                                            comp in
+                                            AdminHistoryRow(comp: comp)  // DIJAMIN TANPA TOMBOL
+                                        }
+                                    }
+                                }
+
+                                Divider().padding(.vertical, 16)
+
+                                // SEKSI 2: HISTORY JURI
+                                Section(
+                                    header: Text("Approved Adjudicators").font(
+                                        .subheadline.bold()
+                                    ).foregroundStyle(.purple).padding(
+                                        .horizontal,
+                                        24
+                                    ).frame(
+                                        maxWidth: .infinity,
+                                        alignment: .leading
+                                    )
+                                ) {
+                                    if viewModel.approvedAdjudicators.isEmpty {
+                                        Text("No approved adjudicators yet.")
+                                            .font(.caption).foregroundStyle(
+                                                .secondary
+                                            ).padding(.horizontal, 24)
+                                    } else {
+                                        ForEach(viewModel.approvedAdjudicators)
+                                        { req in
+                                            AdminAdjudicatorHistoryRow(req: req)  // DIJAMIN TANPA TOMBOL
+                                        }
                                     }
                                 }
                             }

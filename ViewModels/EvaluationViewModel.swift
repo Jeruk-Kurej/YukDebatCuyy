@@ -1,48 +1,77 @@
-//
-//  EvaluationViewModel.swift
-//  YukDebatCuyy
-//
-//  Created by Bryan Carlie Lukito Setiawan on 26/05/26.
-//
-
 import Foundation
+import FirebaseFirestore
 import Combine
 
-/// Handles adjudicator scoring logic and validation (UC04).
-/// Encapsulates BP standard validations to prevent invalid data pollution in the database.
 class EvaluationViewModel: ObservableObject {
+    @Published var pendingRequests: [CaseBuildingNoteModel] = []
+    // TAMBAHAN: Variabel untuk menampung riwayat review juri
+    @Published var historyRequests: [CaseBuildingNoteModel] = []
     
-    @Published var errorMessage: String? = nil
-    @Published var isSubmissionSuccessful: Bool = false
-    
-    private let dbService: FirestoreServiceProtocol
-    
-    // Dependency Injection
-    init(dbService: FirestoreServiceProtocol) {
-        self.dbService = dbService
+    func fetchPendingFeedbacks() {
+        let db = Firestore.firestore()
+        db.collection("case_notes")
+            .whereField("isFeedbackRequested", isEqualTo: true)
+            .whereField("visibility", isEqualTo: "PUBLIC")
+            .addSnapshotListener { snapshot, error in
+                guard let docs = snapshot?.documents else { return }
+                
+                self.pendingRequests = docs.compactMap { doc in
+                    let data = doc.data()
+                    
+                    if data["feedbackText"] != nil { return nil }
+                    
+                    return CaseBuildingNoteModel(
+                        id: doc.documentID,
+                        ownerId: data["ownerId"] as? String ?? "",
+                        motionTitle: data["motionTitle"] as? String ?? "",
+                        argumentsRichText: data["argumentsRichText"] as? String ?? "",
+                        visibility: .publicAccess,
+                        isFeedbackRequested: true,
+                        updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date(),
+                        feedbackText: data["feedbackText"] as? String,
+                        feedbackProviderName: data["feedbackProviderName"] as? String
+                    )
+                }
+                self.pendingRequests.sort { $0.updatedAt < $1.updatedAt }
+            }
     }
     
-    func submitScore(evaluationId: String, score: Int, feedback: String) {
-        // Strategy 1: Validation rejection (Business Rule)
-        guard score >= 50 && score <= 100 else {
-            self.errorMessage = "Ditolak: Skor debat format BP harus berada di rentang 50 hingga 100."
-            return
-        }
-        
-        // Strategy 2: Proceed with authorized upload
-        Task {
-            do {
-                let data: [String: Any] = ["score": score, "feedback": feedback]
-                try await dbService.saveDocument(collection: "evaluations", documentId: evaluationId, data: data)
+    // TAMBAHAN: Fungsi untuk mengambil history berdasarkan nama juri
+    func fetchEvaluationHistory(providerName: String) {
+        let db = Firestore.firestore()
+        db.collection("case_notes")
+            .whereField("feedbackProviderName", isEqualTo: providerName)
+            .addSnapshotListener { snapshot, error in
+                guard let docs = snapshot?.documents else { return }
                 
-                DispatchQueue.main.async {
-                    self.isSubmissionSuccessful = true
-                    self.errorMessage = nil
+                self.historyRequests = docs.compactMap { doc in
+                    let data = doc.data()
+                    return CaseBuildingNoteModel(
+                        id: doc.documentID,
+                        ownerId: data["ownerId"] as? String ?? "",
+                        motionTitle: data["motionTitle"] as? String ?? "",
+                        argumentsRichText: data["argumentsRichText"] as? String ?? "",
+                        visibility: .publicAccess,
+                        isFeedbackRequested: data["isFeedbackRequested"] as? Bool ?? false,
+                        updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date(),
+                        feedbackText: data["feedbackText"] as? String,
+                        feedbackProviderName: data["feedbackProviderName"] as? String
+                    )
                 }
-            } catch {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Gagal mengirim evaluasi: \(error.localizedDescription)"
-                }
+                // Urutkan dari review yang paling baru
+                self.historyRequests.sort { $0.updatedAt > $1.updatedAt }
+            }
+    }
+    
+    func submitFeedback(noteId: String, feedbackText: String, providerName: String) {
+        let db = Firestore.firestore()
+        db.collection("case_notes").document(noteId).updateData([
+            "feedbackText": feedbackText,
+            "feedbackProviderName": providerName,
+            "isFeedbackRequested": false
+        ]) { error in
+            if let error = error {
+                print("Gagal mengirim feedback: \(error.localizedDescription)")
             }
         }
     }
